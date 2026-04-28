@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User, LoginDto, RegisterDto } from '../types'
+import { createContext, useContext, useState } from 'react'
+import type { ReactNode } from 'react'
+import type { User, LoginDto, RegisterDto } from '../types'
 import api from '../lib/api'
 import { setTokens, clearTokens, setUser, getUser, isAuthenticated } from '../lib/auth'
 
@@ -23,10 +24,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     try {
       const res = await api.post('/auth/login', dto)
-      const { user, access_token, refresh_token } = res.data.data
+      const { user: u, access_token, refresh_token } = res.data.data
       setTokens(access_token, refresh_token)
-      setUser(user)
-      setUserState(user)
+      setUser(u)
+      setUserState(u)
     } finally {
       setLoading(false)
     }
@@ -36,10 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     try {
       const res = await api.post('/auth/register', dto)
-      const { user, access_token, refresh_token } = res.data.data
+      const { user: u, access_token, refresh_token } = res.data.data
       setTokens(access_token, refresh_token)
-      setUser(user)
-      setUserState(user)
+      setUser(u)
+      setUserState(u)
     } finally {
       setLoading(false)
     }
