@@ -69,7 +69,7 @@ pub async fn analytics_data(
     _admin: AdminUser,
 ) -> AppResult<Json<Value>> {
     // Signups per day last 30 days
-    let signups = sqlx::query!(
+    let signups_rows = sqlx::query_as::<_, (Option<chrono::NaiveDate>, Option<i64>)>(
         r#"SELECT DATE(created_at) as day, COUNT(*) as count
            FROM users
            WHERE created_at >= NOW() - INTERVAL '30 days'
@@ -79,13 +79,13 @@ pub async fn analytics_data(
     .fetch_all(&state.db)
     .await?;
 
-    let signups_data: Vec<Value> = signups.iter().map(|r| json!({
-        "day": r.day.map(|d| d.to_string()).unwrap_or_default(),
-        "count": r.count.unwrap_or(0)
+    let signups_data: Vec<Value> = signups_rows.iter().map(|(day, count)| json!({
+        "day": day.map(|d| d.to_string()).unwrap_or_default(),
+        "count": count.unwrap_or(0)
     })).collect();
 
     // Orders per day last 30 days
-    let orders = sqlx::query!(
+    let orders_rows = sqlx::query_as::<_, (Option<chrono::NaiveDate>, Option<i64>)>(
         r#"SELECT DATE(created_at) as day, COUNT(*) as count
            FROM orders
            WHERE created_at >= NOW() - INTERVAL '30 days'
@@ -95,9 +95,9 @@ pub async fn analytics_data(
     .fetch_all(&state.db)
     .await?;
 
-    let orders_data: Vec<Value> = orders.iter().map(|r| json!({
-        "day": r.day.map(|d| d.to_string()).unwrap_or_default(),
-        "count": r.count.unwrap_or(0)
+    let orders_data: Vec<Value> = orders_rows.iter().map(|(day, count)| json!({
+        "day": day.map(|d| d.to_string()).unwrap_or_default(),
+        "count": count.unwrap_or(0)
     })).collect();
 
     Ok(Json(json!({

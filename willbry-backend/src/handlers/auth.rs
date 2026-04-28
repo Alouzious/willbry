@@ -230,13 +230,15 @@ pub async fn reset_password(
         return Err(AppError::Validation("Password must be at least 6 characters".to_string()));
     }
 
-    let reset = sqlx::query!(
-        "SELECT user_id FROM password_resets WHERE token = $1 AND created_at > NOW() - INTERVAL '1 hour'",
-        body.token
+    let reset_row = sqlx::query_as::<_, (Uuid,)>(
+        "SELECT user_id FROM password_resets WHERE token = $1 AND created_at > NOW() - INTERVAL '1 hour'"
     )
+    .bind(&body.token)
     .fetch_optional(&state.db)
     .await?
     .ok_or_else(|| AppError::BadRequest("Invalid or expired reset token".to_string()))?;
+
+    let user_id = reset_row.0;
 
     let salt = SaltString::generate(&mut OsRng);
     let password_hash = Argon2::default()
@@ -246,7 +248,7 @@ pub async fn reset_password(
 
     sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
         .bind(&password_hash)
-        .bind(reset.user_id)
+        .bind(user_id)
         .execute(&state.db)
         .await?;
 

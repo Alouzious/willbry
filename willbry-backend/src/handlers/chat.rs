@@ -20,13 +20,15 @@ pub async fn send_message(
     }
 
     // Load AI config
-    let (system_prompt, model) = sqlx::query!(
+    let config_row = sqlx::query_as::<_, (String, String)>(
         "SELECT system_prompt, model FROM ai_config ORDER BY updated_at DESC LIMIT 1"
     )
     .fetch_optional(&state.db)
-    .await?
-    .map(|r| (r.system_prompt, r.model))
-    .unwrap_or_else(|| (default_system_prompt(), "llama-3.3-70b-versatile".to_string()));
+    .await?;
+
+    let (system_prompt, model) = config_row
+        .map(|(sp, m)| (sp, m))
+        .unwrap_or_else(|| (default_system_prompt(), "llama-3.3-70b-versatile".to_string()));
 
     // Load last 20 messages for context
     let history = sqlx::query_as::<_, ChatMessage>(
@@ -102,13 +104,15 @@ pub async fn preview_chat(
         return Err(AppError::BadRequest("Message cannot be empty".to_string()));
     }
 
-    let (system_prompt, model) = sqlx::query!(
+    let config_row2 = sqlx::query_as::<_, (String, String)>(
         "SELECT system_prompt, model FROM ai_config ORDER BY updated_at DESC LIMIT 1"
     )
     .fetch_optional(&state.db)
-    .await?
-    .map(|r| (r.system_prompt, r.model))
-    .unwrap_or_else(|| (default_system_prompt(), "llama-3.3-70b-versatile".to_string()));
+    .await?;
+
+    let (system_prompt, model) = config_row2
+        .map(|(sp, m)| (sp, m))
+        .unwrap_or_else(|| (default_system_prompt(), "llama-3.3-70b-versatile".to_string()));
 
     let reply = chat_completion(
         &state.config.groq_api_key,
