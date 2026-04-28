@@ -2,40 +2,108 @@ import type { HTMLAttributes, ReactNode } from 'react'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
-  padding?: 'none' | 'sm' | 'md' | 'lg'
   hover?: boolean
-  border?: boolean
 }
 
-const paddings = { none: '', sm: 'p-4', md: 'p-6', lg: 'p-8' }
-
-export function Card({ children, padding = 'md', hover = false, border = true, className = '', ...props }: CardProps) {
+export function Card({ children, hover = true, className = '', ...props }: CardProps) {
   return (
-    <div className={[
-      'bg-white rounded-2xl shadow-sm',
-      border ? 'border border-gray-100' : '',
-      hover ? 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer' : '',
-      paddings[padding], className,
-    ].filter(Boolean).join(' ')} {...props}>
+    <div
+      className={[
+        'rounded-2xl border border-willbry-green-100 bg-white shadow-card',
+        hover ? 'transition-all duration-200 hover:-translate-y-1 hover:shadow-card-hover' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
       {children}
     </div>
   )
 }
 
-export function CardHeader({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mb-4 ${className}`}>{children}</div>
+export function CardHeader({
+  children,
+  className = '',
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['p-6 pb-3', className].filter(Boolean).join(' ')} {...props}>
+      {children}
+    </div>
+  )
 }
 
-export function CardTitle({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <h3 className={`text-lg font-semibold text-willbry-green-900 tracking-tight ${className}`}>{children}</h3>
+export function CardTitle({
+  children,
+  className = '',
+  ...props
+}: HTMLAttributes<HTMLHeadingElement>) {
+  return (
+    <h3
+      className={[
+        'text-lg font-bold tracking-tight text-willbry-green-900',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
+      {children}
+    </h3>
+  )
 }
 
-export function CardDescription({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <p className={`text-sm text-gray-500 mt-1 ${className}`}>{children}</p>
+export function CardDescription({
+  children,
+  className = '',
+  ...props
+}: HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p
+      className={[
+        'mt-1 text-sm leading-6 text-gray-600',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
+      {children}
+    </p>
+  )
 }
 
-export function CardFooter({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mt-4 pt-4 border-t border-gray-100 ${className}`}>{children}</div>
+export function CardContent({
+  children,
+  className = '',
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={['p-6 pt-3', className].filter(Boolean).join(' ')} {...props}>
+      {children}
+    </div>
+  )
+}
+
+export function CardFooter({
+  children,
+  className = '',
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={[
+        'flex items-center gap-3 border-t border-willbry-green-100 p-6',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
+      {children}
+    </div>
+  )
 }
 
 export default Card

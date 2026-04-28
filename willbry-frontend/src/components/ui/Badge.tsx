@@ -1,22 +1,31 @@
+import type { ReactNode } from 'react'
 import type { OrderStatus } from '../../types'
 
-type BadgeVariant = 'green' | 'teal' | 'orange' | 'red' | 'gray' | 'yellow' | 'blue'
+type BadgeVariant =
+  | 'green'
+  | 'teal'
+  | 'orange'
+  | 'red'
+  | 'gray'
+  | 'yellow'
+  | 'blue'
 
 interface BadgeProps {
-  children: React.ReactNode
+  children: ReactNode
   variant?: BadgeVariant
   size?: 'sm' | 'md'
   dot?: boolean
+  className?: string
 }
 
 const variants: Record<BadgeVariant, string> = {
-  green: 'bg-green-100 text-green-800 border-green-200',
-  teal: 'bg-teal-100 text-teal-800 border-teal-200',
-  orange: 'bg-orange-100 text-orange-800 border-orange-200',
-  red: 'bg-red-100 text-red-700 border-red-200',
-  gray: 'bg-gray-100 text-gray-700 border-gray-200',
-  yellow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  blue: 'bg-blue-100 text-blue-800 border-blue-200',
+  green: 'border-green-200 bg-green-50 text-green-700',
+  teal: 'border-teal-200 bg-teal-50 text-teal-700',
+  orange: 'border-orange-200 bg-orange-50 text-orange-700',
+  red: 'border-red-200 bg-red-50 text-red-700',
+  gray: 'border-gray-200 bg-gray-50 text-gray-700',
+  yellow: 'border-yellow-200 bg-yellow-50 text-yellow-800',
+  blue: 'border-blue-200 bg-blue-50 text-blue-700',
 }
 
 const dotColors: Record<BadgeVariant, string> = {
@@ -29,23 +38,32 @@ const dotColors: Record<BadgeVariant, string> = {
   blue: 'bg-blue-500',
 }
 
-export function Badge({ children, variant = 'gray', size = 'md', dot }: BadgeProps) {
+export function Badge({
+  children,
+  variant = 'gray',
+  size = 'md',
+  dot = false,
+  className = '',
+}: BadgeProps) {
   return (
     <span
       className={[
-        'inline-flex items-center gap-1.5 font-medium border rounded-full',
+        'inline-flex items-center gap-1.5 rounded-full border font-semibold',
         variants[variant],
         size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs',
-      ].join(' ')}
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
-      {dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColors[variant]}`} />}
+      {dot && <span className={['h-1.5 w-1.5 rounded-full', dotColors[variant]].join(' ')} />}
       {children}
     </span>
   )
 }
 
 export function orderStatusVariant(status: OrderStatus): BadgeVariant {
-  const map: Record<OrderStatus, BadgeVariant> = {
+  const variantsByStatus: Record<OrderStatus, BadgeVariant> = {
     pending: 'yellow',
     confirmed: 'blue',
     processing: 'teal',
@@ -53,7 +71,8 @@ export function orderStatusVariant(status: OrderStatus): BadgeVariant {
     delivered: 'green',
     cancelled: 'red',
   }
-  return map[status] ?? 'gray'
+
+  return variantsByStatus[status] ?? 'gray'
 }
 
 export default Badge

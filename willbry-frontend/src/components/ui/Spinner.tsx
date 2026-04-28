@@ -4,23 +4,49 @@ interface SpinnerProps {
   className?: string
 }
 
-const sizes = { xs: 'w-3 h-3 border', sm: 'w-4 h-4 border-2', md: 'w-6 h-6 border-2', lg: 'w-8 h-8 border-[3px]' }
-const colors = {
-  green: 'border-willbry-green-200 border-t-willbry-green-700',
-  white: 'border-white/30 border-t-white',
-  accent: 'border-orange-200 border-t-willbry-accent',
+const sizes: Record<NonNullable<SpinnerProps['size']>, string> = {
+  xs: 'h-3 w-3 border',
+  sm: 'h-4 w-4 border-2',
+  md: 'h-6 w-6 border-2',
+  lg: 'h-9 w-9 border-[3px]',
 }
 
-export function Spinner({ size = 'md', color = 'green', className = '' }: SpinnerProps) {
-  return <div className={['rounded-full animate-spin', sizes[size], colors[color], className].join(' ')} role="status" aria-label="Loading" />
+const colors: Record<NonNullable<SpinnerProps['color']>, string> = {
+  green: 'border-willbry-green-100 border-t-willbry-green-600',
+  white: 'border-white/30 border-t-white',
+  accent: 'border-orange-100 border-t-willbry-accent',
+}
+
+export function Spinner({
+  size = 'md',
+  color = 'green',
+  className = '',
+}: SpinnerProps) {
+  return (
+    <span
+      role="status"
+      aria-label="Loading"
+      className={[
+        'inline-block animate-spin rounded-full',
+        sizes[size],
+        colors[color],
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    />
+  )
 }
 
 export function PageSpinner() {
   return (
-    <div className="flex items-center justify-center min-h-[300px]">
-      <div className="flex flex-col items-center gap-3">
+    <div className="flex min-h-[360px] items-center justify-center">
+      <div className="flex flex-col items-center gap-4 rounded-2xl border border-willbry-green-100 bg-white px-8 py-7 shadow-card">
         <Spinner size="lg" />
-        <p className="text-sm text-gray-500 animate-pulse">Loading...</p>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-willbry-green-900">Loading WillBry platform</p>
+          <p className="mt-1 text-xs text-gray-500">Preparing a smarter farming experience.</p>
+        </div>
       </div>
     </div>
   )

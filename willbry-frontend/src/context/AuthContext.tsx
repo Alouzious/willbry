@@ -1,8 +1,14 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { User, LoginDto, RegisterDto } from '../types'
 import api from '../lib/api'
-import { setTokens, clearTokens, setUser, getUser, isAuthenticated } from '../lib/auth'
+import {
+  setTokens,
+  clearTokens,
+  setUser,
+  getUser,
+  isAuthenticated,
+} from '../lib/auth'
 
 interface AuthContextType {
   user: User | null
@@ -14,7 +20,7 @@ interface AuthContextType {
   isAdmin: boolean
 }
 
-const AuthContext = createContext<AuthContextType | null>(null)
+export const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(getUser())
@@ -24,10 +30,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     try {
       const res = await api.post('/auth/login', dto)
-      const { user, access_token, refresh_token } = res.data.data
-      setTokens(access_token, refresh_token)
-      setUser(user)
-      setUserState(user)
+      const payload = res.data?.data ?? res.data
+
+      setTokens(payload.access_token, payload.refresh_token)
+      setUser(payload.user)
+      setUserState(payload.user)
     } finally {
       setLoading(false)
     }
@@ -37,10 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     try {
       const res = await api.post('/auth/register', dto)
-      const { user, access_token, refresh_token } = res.data.data
-      setTokens(access_token, refresh_token)
-      setUser(user)
-      setUserState(user)
+      const payload = res.data?.data ?? res.data
+
+      setTokens(payload.access_token, payload.refresh_token)
+      setUser(payload.user)
+      setUserState(payload.user)
     } finally {
       setLoading(false)
     }
@@ -49,11 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     clearTokens()
     setUserState(null)
-    window.location.href = '/login'
+    window.location.href = '/'
   }
 
-  return (
-    <AuthContext.Provider value={{
+  const value = useMemo<AuthContextType>(
+    () => ({
       user,
       loading,
       login,
@@ -61,13 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       isAuth: isAuthenticated(),
       isAdmin: user?.role === 'admin',
-    }}>
-      {children}
-    </AuthContext.Provider>
+    }),
+    [user, loading]
   )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
