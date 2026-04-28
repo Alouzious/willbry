@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import React from 'react'
 import Sidebar from '../../components/layout/Sidebar'
 import DashboardStats from '../../components/portal/DashboardStats'
 import api from '../../lib/api'
