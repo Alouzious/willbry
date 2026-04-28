@@ -10,6 +10,18 @@ use crate::{
     services::groq::{chat_completion, default_system_prompt},
 };
 
+async fn load_ai_config(state: &AppState) -> (String, String) {
+    let row = sqlx::query_as::<_, (String, String)>(
+        "SELECT system_prompt, model FROM ai_config ORDER BY updated_at DESC LIMIT 1"
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    row.unwrap_or_else(|| (default_system_prompt(), "llama-3.3-70b-versatile".to_string()))
+}
+
 pub async fn send_message(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -19,16 +31,8 @@ pub async fn send_message(
         return Err(AppError::BadRequest("Message cannot be empty".to_string()));
     }
 
-    // Load AI config
-    let (system_prompt, model) = sqlx::query!(
-        "SELECT system_prompt, model FROM ai_config ORDER BY updated_at DESC LIMIT 1"
-    )
-    .fetch_optional(&state.db)
-    .await?
-    .map(|r| (r.system_prompt, r.model))
-    .unwrap_or_else(|| (default_system_prompt(), "llama-3.3-70b-versatile".to_string()));
+    let (system_prompt, model) = load_ai_config(&state).await;
 
-    // Load last 20 messages for context
     let history = sqlx::query_as::<_, ChatMessage>(
         "SELECT * FROM chat_messages WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20"
     )
@@ -36,13 +40,12 @@ pub async fn send_message(
     .fetch_all(&state.db)
     .await?;
 
-    let mut history_reversed: Vec<GroqMessage> = history
+    let history_reversed: Vec<GroqMessage> = history
         .into_iter()
         .rev()
         .map(|m| GroqMessage { role: m.role, content: m.content })
         .collect();
 
-    // Save user message
     sqlx::query(
         "INSERT INTO chat_messages (id, user_id, role, content) VALUES ($1, $2, 'user', $3)"
     )
@@ -52,7 +55,6 @@ pub async fn send_message(
     .execute(&state.db)
     .await?;
 
-    // Call Groq
     let reply = chat_completion(
         &state.config.groq_api_key,
         &model,
@@ -62,7 +64,6 @@ pub async fn send_message(
     )
     .await?;
 
-    // Save assistant reply
     let msg_id = Uuid::new_v4();
     sqlx::query(
         "INSERT INTO chat_messages (id, user_id, role, content) VALUES ($1, $2, 'assistant', $3)"
@@ -102,13 +103,7 @@ pub async fn preview_chat(
         return Err(AppError::BadRequest("Message cannot be empty".to_string()));
     }
 
-    let (system_prompt, model) = sqlx::query!(
-        "SELECT system_prompt, model FROM ai_config ORDER BY updated_at DESC LIMIT 1"
-    )
-    .fetch_optional(&state.db)
-    .await?
-    .map(|r| (r.system_prompt, r.model))
-    .unwrap_or_else(|| (default_system_prompt(), "llama-3.3-70b-versatile".to_string()));
+    let (system_prompt, model) = load_ai_config(&state).await;
 
     let reply = chat_completion(
         &state.config.groq_api_key,

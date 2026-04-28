@@ -35,7 +35,7 @@ pub async fn register(
     let argon2 = Argon2::default();
     let password_hash = argon2
         .hash_password(body.password.as_bytes(), &salt)
-        .map_err(|e| AppError::Internal(format!("Password hashing failed: {}", e)))?
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("Password hashing failed: {}", e)))?
         .to_string();
 
     let user_type = body.user_type.unwrap_or_else(|| "client".to_string());
@@ -93,7 +93,7 @@ pub async fn login(
     .ok_or_else(|| AppError::Unauthorized("Invalid email or password".to_string()))?;
 
     let parsed_hash = PasswordHash::new(&user.password_hash)
-        .map_err(|_| AppError::Internal("Invalid password hash".to_string()))?;
+        .map_err(|_| AppError::Internal(anyhow::anyhow!("Invalid password hash")))?;
 
     Argon2::default()
         .verify_password(body.password.as_bytes(), &parsed_hash)
@@ -230,10 +230,10 @@ pub async fn reset_password(
         return Err(AppError::Validation("Password must be at least 6 characters".to_string()));
     }
 
-    let reset = sqlx::query!(
-        "SELECT user_id FROM password_resets WHERE token = $1 AND created_at > NOW() - INTERVAL '1 hour'",
-        body.token
+    let reset_user_id = sqlx::query_scalar::<_, uuid::Uuid>(
+        "SELECT user_id FROM password_resets WHERE token = $1 AND created_at > NOW() - INTERVAL '1 hour'"
     )
+    .bind(&body.token)
     .fetch_optional(&state.db)
     .await?
     .ok_or_else(|| AppError::BadRequest("Invalid or expired reset token".to_string()))?;
@@ -241,12 +241,12 @@ pub async fn reset_password(
     let salt = SaltString::generate(&mut OsRng);
     let password_hash = Argon2::default()
         .hash_password(body.new_password.as_bytes(), &salt)
-        .map_err(|e| AppError::Internal(e.to_string()))?
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("Operation failed: {}", e)))?
         .to_string();
 
     sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
         .bind(&password_hash)
-        .bind(reset.user_id)
+        .bind(reset_user_id)
         .execute(&state.db)
         .await?;
 

@@ -33,7 +33,7 @@ pub fn create_access_token(
         &claims,
         &EncodingKey::from_secret(secret.as_bytes()),
     )
-    .map_err(|e| AppError::Internal(format!("Token creation failed: {}", e)))
+    .map_err(|e| AppError::Internal(anyhow::anyhow!("Token creation failed: {}", e)))
 }
 
 pub fn create_refresh_token(

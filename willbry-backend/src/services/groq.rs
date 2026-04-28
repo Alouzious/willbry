@@ -11,15 +11,12 @@ pub async fn chat_completion(
     user_message: &str,
 ) -> AppResult<String> {
     let client = Client::new();
-
     let mut all_messages: Vec<Value> = vec![
         json!({ "role": "system", "content": system_prompt })
     ];
-
     for msg in &messages {
         all_messages.push(json!({ "role": msg.role, "content": msg.content }));
     }
-
     all_messages.push(json!({ "role": "user", "content": user_message }));
 
     let response = client
@@ -33,17 +30,17 @@ pub async fn chat_completion(
         }))
         .send()
         .await
-        .map_err(|e| AppError::Internal(format!("Groq request failed: {}", e)))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("Groq request failed: {}", e)))?;
 
     if !response.status().is_success() {
         let err_text = response.text().await.unwrap_or_default();
-        return Err(AppError::Internal(format!("Groq API error: {}", err_text)));
+        return Err(AppError::Internal(anyhow::anyhow!("Groq API error: {}", err_text)));
     }
 
     let body: Value = response
         .json()
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to parse Groq response: {}", e)))?;
+        .map_err(|e| AppError::Internal(anyhow::anyhow!("Failed to parse Groq response: {}", e)))?;
 
     let content = body["choices"][0]["message"]["content"]
         .as_str()

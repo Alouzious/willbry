@@ -1,6 +1,7 @@
 use axum::extract::State;
 use axum::Json;
 use serde_json::{json, Value};
+use sqlx::FromRow;
 
 use crate::{
     AppState,
@@ -8,44 +9,39 @@ use crate::{
     middleware::admin::AdminUser,
 };
 
+#[derive(FromRow)]
+struct DayStat {
+    day: Option<String>,
+    count: Option<i64>,
+}
+
 pub async fn admin_dashboard(
     State(state): State<AppState>,
     _admin: AdminUser,
 ) -> AppResult<Json<Value>> {
     let total_users = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE active = true")
         .fetch_one(&state.db).await?;
-
     let total_orders = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM orders")
         .fetch_one(&state.db).await?;
-
     let pending_orders = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM orders WHERE status = 'pending'")
         .fetch_one(&state.db).await?;
-
     let total_inquiries = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM inquiries")
         .fetch_one(&state.db).await?;
-
     let unread_inquiries = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM inquiries WHERE read = false")
         .fetch_one(&state.db).await?;
-
     let total_blog_posts = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM blog_posts WHERE published = true")
         .fetch_one(&state.db).await?;
-
     let total_products = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM products WHERE active = true")
         .fetch_one(&state.db).await?;
-
     let total_farmers = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM farmers WHERE active = true")
         .fetch_one(&state.db).await?;
-
     let total_ai_chats = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM chat_messages WHERE role = 'user'")
         .fetch_one(&state.db).await?;
-
     let total_bookings = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM bookings")
         .fetch_one(&state.db).await?;
-
     let new_users_this_month = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '30 days'"
     ).fetch_one(&state.db).await?;
-
     let orders_this_month = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM orders WHERE created_at >= NOW() - INTERVAL '30 days'"
     ).fetch_one(&state.db).await?;
@@ -68,35 +64,33 @@ pub async fn analytics_data(
     State(state): State<AppState>,
     _admin: AdminUser,
 ) -> AppResult<Json<Value>> {
-    // Signups per day last 30 days
-    let signups = sqlx::query!(
-        r#"SELECT DATE(created_at) as day, COUNT(*) as count
+    let signups = sqlx::query_as::<_, DayStat>(
+        r#"SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as day, COUNT(*) as count
            FROM users
            WHERE created_at >= NOW() - INTERVAL '30 days'
            GROUP BY DATE(created_at)
-           ORDER BY day ASC"#
+           ORDER BY DATE(created_at) ASC"#
     )
     .fetch_all(&state.db)
     .await?;
 
     let signups_data: Vec<Value> = signups.iter().map(|r| json!({
-        "day": r.day.map(|d| d.to_string()).unwrap_or_default(),
+        "day": r.day.clone().unwrap_or_default(),
         "count": r.count.unwrap_or(0)
     })).collect();
 
-    // Orders per day last 30 days
-    let orders = sqlx::query!(
-        r#"SELECT DATE(created_at) as day, COUNT(*) as count
+    let orders = sqlx::query_as::<_, DayStat>(
+        r#"SELECT TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as day, COUNT(*) as count
            FROM orders
            WHERE created_at >= NOW() - INTERVAL '30 days'
            GROUP BY DATE(created_at)
-           ORDER BY day ASC"#
+           ORDER BY DATE(created_at) ASC"#
     )
     .fetch_all(&state.db)
     .await?;
 
     let orders_data: Vec<Value> = orders.iter().map(|r| json!({
-        "day": r.day.map(|d| d.to_string()).unwrap_or_default(),
+        "day": r.day.clone().unwrap_or_default(),
         "count": r.count.unwrap_or(0)
     })).collect();
 

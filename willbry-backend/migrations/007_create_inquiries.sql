@@ -1,4 +1,4 @@
-CREATE TABLE resources (
+CREATE TABLE IF NOT EXISTS resources (
     id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title          VARCHAR(500) NOT NULL,
     file_url       TEXT NOT NULL,
