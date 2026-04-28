@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import React from 'react'
 import Sidebar from '../../components/layout/Sidebar'
 import AdminStats from '../../components/admin/AdminStats'
 import AnalyticsChart from '../../components/admin/AnalyticsChart'
@@ -19,6 +18,7 @@ interface DashboardData {
 interface ChartDataPoint {
   name: string
   value: number
+  [key: string]: string | number
 }
 
 export default function AdminDashboard() {

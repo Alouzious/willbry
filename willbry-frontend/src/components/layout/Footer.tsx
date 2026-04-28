@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Leaf, Facebook, Twitter, Instagram, Linkedin, Youtube, Mail, Phone, MapPin } from 'lucide-react'
+import { Leaf, Share2, MessageSquare, Camera, Briefcase, Tv2, Mail, Phone, MapPin } from 'lucide-react'
 
 export default function Footer() {
   return (
@@ -15,8 +15,14 @@ export default function Footer() {
               Agro-Innovations Platform 2.0 — Nourishing communities and empowering farmers through technology and sustainable agriculture.
             </p>
             <div className="flex gap-3">
-              {[Facebook, Twitter, Instagram, Linkedin, Youtube].map((Icon, i) => (
-                <a key={i} href="#" className="text-gray-400 hover:text-[#52b788] transition-colors">
+              {([
+                { Icon: Share2, label: 'Facebook' },
+                { Icon: MessageSquare, label: 'Twitter / X' },
+                { Icon: Camera, label: 'Instagram' },
+                { Icon: Briefcase, label: 'LinkedIn' },
+                { Icon: Tv2, label: 'YouTube' },
+              ] as const).map(({ Icon, label }) => (
+                <a key={label} href="#" aria-label={label} className="text-gray-400 hover:text-[#52b788] transition-colors">
                   <Icon className="h-5 w-5" />
                 </a>
               ))}

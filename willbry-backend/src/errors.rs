@@ -71,3 +71,5 @@ impl From<jsonwebtoken::errors::Error> for AppError {
         AppError::Unauthorized(format!("JWT error: {}", e))
     }
 }
+
+pub type AppResult<T> = Result<T, AppError>;
