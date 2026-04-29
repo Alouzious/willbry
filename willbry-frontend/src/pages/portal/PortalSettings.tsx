@@ -5,6 +5,8 @@ import Sidebar from '../../components/layout/Sidebar'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../../hooks/useAuth'
+import api from '../../lib/api'
+import { setUser } from '../../lib/auth'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -20,7 +22,6 @@ export default function PortalSettings() {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     full_name: user?.full_name ?? '',
-    email: user?.email ?? '',
     phone: user?.phone ?? '',
   })
 
@@ -28,14 +29,23 @@ export default function PortalSettings() {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  const save = (event: React.FormEvent) => {
+  const save = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
 
-    setTimeout(() => {
+    try {
+      const res = await api.put('/portal/profile', {
+        full_name: form.full_name || null,
+        phone: form.phone || null,
+      })
+      const data = res.data?.data ?? res.data
+      if (data) setUser(data)
       toast.success('Settings saved')
+    } catch {
+      toast.error('Failed to save settings')
+    } finally {
       setLoading(false)
-    }, 500)
+    }
   }
 
   return (
@@ -68,8 +78,9 @@ export default function PortalSettings() {
               <Input
                 label="Email address"
                 type="email"
-                value={form.email}
-                onChange={(e) => update('email', e.target.value)}
+                value={user?.email ?? ''}
+                disabled
+                hint="Email cannot be changed."
               />
               <Input
                 label="Phone number"

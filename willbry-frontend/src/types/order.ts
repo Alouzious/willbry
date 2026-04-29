@@ -3,7 +3,7 @@ export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | '
 export interface OrderItem {
   id: string
   product_id: string
-  product_name: string
+  product_name?: string
   quantity: number
   unit_price: number
 }
@@ -15,7 +15,7 @@ export interface Order {
   total: number
   delivery_address: string
   notes?: string
-  items: OrderItem[]
+  items?: OrderItem[]
   created_at: string
   updated_at: string
 }

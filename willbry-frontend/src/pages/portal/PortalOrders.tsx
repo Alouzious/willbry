@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Bot, Download, FileText, Package, ShoppingBag } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Bot, Download, FileText, Loader2, Package, ShoppingBag } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import OrdersTable from '../../components/portal/OrdersTable'
+import api from '../../lib/api'
 import type { Order } from '../../types'
 
 const portalItems = [
@@ -12,25 +13,22 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const fallbackOrders: Order[] = [
-  {
-    id: 'order-1001',
-    user_id: 'user-1',
-    status: 'confirmed',
-    total: 52000,
-    delivery_address: 'Kabale Municipality, Northern Division',
-    notes: 'Deliver in the morning',
-    items: [
-      { id: 'i1', product_id: 'p1', product_name: 'SmartCrisps', quantity: 4, unit_price: 5000 },
-      { id: 'i2', product_id: 'p2', product_name: 'SmartFlour', quantity: 2, unit_price: 16000 },
-    ],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
-
 export default function PortalOrders() {
-  const [orders] = useState<Order[]>(fallbackOrders)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    api.get('/portal/orders')
+      .then((res) => {
+        const data = res.data?.data ?? res.data
+        setOrders(Array.isArray(data) ? data : [])
+      })
+      .catch(() => setError('Failed to load orders. Please try again.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   return (
     <main className="flex min-h-screen bg-willbry-light">
@@ -52,7 +50,17 @@ export default function PortalOrders() {
             </p>
           </div>
 
-          <OrdersTable orders={orders} />
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-willbry-green-500" />
+            </div>
+          ) : error ? (
+            <div className="rounded-3xl border border-dashed border-red-200 bg-red-50 p-12 text-center">
+              <p className="font-black text-red-700">{error}</p>
+            </div>
+          ) : (
+            <OrdersTable orders={orders} />
+          )}
         </div>
       </section>
     </main>

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Filter, ShoppingCart, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Filter, Loader2, ShoppingCart, X } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import PageBanner from '../../components/layout/PageBanner'
@@ -8,54 +8,8 @@ import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { useCart } from '../../hooks/useCart'
 import { formatCurrency } from '../../lib/utils'
+import api from '../../lib/api'
 import type { Product, ProductCategory } from '../../types'
-
-const products: Product[] = [
-  {
-    id: 'p1',
-    name: 'SmartCrisps',
-    slug: 'smartcrisps',
-    description:
-      'Premium potato crisps produced through local value addition, supporting farmers and creating market-ready food products.',
-    price: 5000,
-    unit: 'pack',
-    category: 'food',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p2',
-    name: 'SmartFlour',
-    slug: 'smartflour',
-    description:
-      'Fortified flour designed to improve nutrition while strengthening local agricultural value chains.',
-    price: 12000,
-    unit: 'kg',
-    category: 'food',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p3',
-    name: 'Digital Farm Advisory Package',
-    slug: 'digital-farm-advisory',
-    description:
-      'AI-supported advisory and digital record tools for farmers, cooperatives, and agribusiness teams.',
-    category: 'digital',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p4',
-    name: 'Farmer Training Package',
-    slug: 'farmer-training-package',
-    description:
-      'Practical training package covering production, post-harvest handling, value addition, and market readiness.',
-    category: 'training',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-]
 
 const categories: Array<'all' | ProductCategory> = [
   'all',
@@ -69,13 +23,28 @@ const categories: Array<'all' | ProductCategory> = [
 export default function ProductsPage() {
   const [active, setActive] = useState<'all' | ProductCategory>('all')
   const [cartOpen, setCartOpen] = useState(false)
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { items, total, count, removeItem, updateQuantity, clearCart } = useCart()
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    api.get('/products')
+      .then((res) => {
+        const data = res.data?.data ?? res.data
+        setProducts(Array.isArray(data) ? data : [])
+      })
+      .catch(() => setError('Failed to load products. Please try again.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filteredProducts = useMemo(() => {
     return active === 'all'
       ? products
       : products.filter((product) => product.category === active)
-  }, [active])
+  }, [active, products])
 
   return (
     <>
@@ -127,9 +96,24 @@ export default function ProductsPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+              {loading ? (
+                <div className="col-span-3 flex items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-willbry-green-500" />
+                </div>
+              ) : error ? (
+                <div className="col-span-3 rounded-3xl border border-dashed border-red-200 bg-red-50 p-12 text-center">
+                  <p className="font-black text-red-700">{error}</p>
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="col-span-3 rounded-3xl border border-dashed border-willbry-green-200 bg-willbry-light p-12 text-center">
+                  <p className="font-black text-willbry-green-900">No products found.</p>
+                  <p className="mt-2 text-sm text-gray-500">Try another category.</p>
+                </div>
+              ) : (
+                filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))
+              )}
             </div>
           </div>
         </section>

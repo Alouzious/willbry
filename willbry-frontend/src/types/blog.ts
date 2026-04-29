@@ -7,7 +7,7 @@ export interface BlogPost {
   content: string
   excerpt?: string
   author_id: string
-  author_name: string
+  author_name?: string
   category: BlogCategory
   cover_image?: string
   published: boolean

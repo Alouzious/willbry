@@ -19,6 +19,23 @@ pub struct BlogPost {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct BlogPostWithAuthor {
+    pub id: Uuid,
+    pub title: String,
+    pub slug: String,
+    pub content: String,
+    pub excerpt: Option<String>,
+    pub author_id: Uuid,
+    pub author_name: String,
+    pub category: String,
+    pub cover_image: Option<String>,
+    pub published: bool,
+    pub views: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CreatePostRequest {
     pub title: String,

@@ -1,46 +1,38 @@
-import { useMemo, useState } from 'react'
-import { MapPin, Search, Sprout, Users } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Loader2, MapPin, Search, Sprout, Users } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import PageBanner from '../../components/layout/PageBanner'
 import { Input } from '../../components/ui/Input'
 import { Badge } from '../../components/ui/Badge'
+import api from '../../lib/api'
 
 interface Farmer {
   id: string
   name: string
   district: string
   location: string
-  crops: string[]
+  crops: string
   phone?: string
 }
 
-const farmers: Farmer[] = [
-  {
-    id: 'f1',
-    name: 'Kigezi Potato Farmers Cooperative',
-    district: 'Kabale',
-    location: 'Northern Division',
-    crops: ['Irish potatoes', 'Beans'],
-  },
-  {
-    id: 'f2',
-    name: 'Rukiga Highlands Growers',
-    district: 'Rukiga',
-    location: 'Muhanga',
-    crops: ['Maize', 'Beans', 'Sorghum'],
-  },
-  {
-    id: 'f3',
-    name: 'Rubanda Coffee & Food Crops Group',
-    district: 'Rubanda',
-    location: 'Muko',
-    crops: ['Coffee', 'Maize', 'Irish potatoes'],
-  },
-]
-
 export default function FarmerDirectoryPage() {
   const [query, setQuery] = useState('')
+  const [farmers, setFarmers] = useState<Farmer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    api.get('/farmers', { params: { per_page: 100 } })
+      .then((res) => {
+        const data = res.data?.data ?? res.data
+        setFarmers(Array.isArray(data) ? data : [])
+      })
+      .catch(() => setError('Failed to load farmer directory. Please try again.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = useMemo(() => {
     const search = query.toLowerCase()
@@ -50,10 +42,13 @@ export default function FarmerDirectoryPage() {
         farmer.name.toLowerCase().includes(search) ||
         farmer.district.toLowerCase().includes(search) ||
         farmer.location.toLowerCase().includes(search) ||
-        farmer.crops.join(' ').toLowerCase().includes(search)
+        farmer.crops.toLowerCase().includes(search)
       )
     })
-  }, [query])
+  }, [query, farmers])
+
+  const getCrops = (crops: string): string[] =>
+    crops.split(',').map((c) => c.trim()).filter(Boolean)
 
   return (
     <>
@@ -85,42 +80,54 @@ export default function FarmerDirectoryPage() {
               />
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-3">
-              {filtered.map((farmer) => (
-                <article
-                  key={farmer.id}
-                  className="rounded-[2rem] border border-willbry-green-100 bg-white p-6 shadow-card transition-all hover:-translate-y-1 hover:shadow-card-hover"
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-willbry-green-50 text-willbry-green-600">
-                    <Users size={28} />
-                  </div>
-
-                  <h3 className="mt-6 text-xl font-black text-willbry-green-900">
-                    {farmer.name}
-                  </h3>
-
-                  <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <MapPin size={16} className="text-willbry-teal" />
-                    {farmer.location}, {farmer.district}
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {farmer.crops.map((crop) => (
-                      <Badge key={crop} variant="green" size="sm">
-                        <Sprout size={12} />
-                        {crop}
-                      </Badge>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            {!filtered.length && (
-              <div className="rounded-3xl border border-dashed border-willbry-green-200 bg-willbry-light p-12 text-center">
-                <p className="font-black text-willbry-green-900">No farmers found.</p>
-                <p className="mt-2 text-sm text-gray-500">Try searching another crop or district.</p>
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-willbry-green-500" />
               </div>
+            ) : error ? (
+              <div className="rounded-3xl border border-dashed border-red-200 bg-red-50 p-12 text-center">
+                <p className="font-black text-red-700">{error}</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-6 lg:grid-cols-3">
+                  {filtered.map((farmer) => (
+                    <article
+                      key={farmer.id}
+                      className="rounded-[2rem] border border-willbry-green-100 bg-white p-6 shadow-card transition-all hover:-translate-y-1 hover:shadow-card-hover"
+                    >
+                      <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-willbry-green-50 text-willbry-green-600">
+                        <Users size={28} />
+                      </div>
+
+                      <h3 className="mt-6 text-xl font-black text-willbry-green-900">
+                        {farmer.name}
+                      </h3>
+
+                      <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-gray-600">
+                        <MapPin size={16} className="text-willbry-teal" />
+                        {farmer.location}, {farmer.district}
+                      </div>
+
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {getCrops(farmer.crops).map((crop) => (
+                          <Badge key={crop} variant="green" size="sm">
+                            <Sprout size={12} />
+                            {crop}
+                          </Badge>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                {!filtered.length && (
+                  <div className="rounded-3xl border border-dashed border-willbry-green-200 bg-willbry-light p-12 text-center">
+                    <p className="font-black text-willbry-green-900">No farmers found.</p>
+                    <p className="mt-2 text-sm text-gray-500">Try searching another crop or district.</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>

@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { Bot, CalendarDays, Download, FileText, Package, Send, ShoppingBag } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Bot, CalendarDays, Download, FileText, Loader2, Package, Send, ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Badge } from '../../components/ui/Badge'
+import api from '../../lib/api'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -14,36 +15,60 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const bookings = [
-  {
-    id: 'bk1',
-    service_type: 'Value Addition Advisory',
-    preferred_date: '2026-05-03',
-    status: 'requested',
-  },
-]
+interface Booking {
+  id: string
+  service_type: string
+  preferred_date: string | null
+  description: string
+  status: string
+}
 
 export default function PortalBookings() {
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [form, setForm] = useState({
     service_type: '',
     preferred_date: '',
     description: '',
   })
 
+  const loadBookings = () => {
+    api.get('/portal/bookings')
+      .then((res) => {
+        const data = res.data?.data ?? res.data
+        setBookings(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {})
+      .finally(() => setFetching(false))
+  }
+
+  useEffect(() => {
+    loadBookings()
+  }, [])
+
   const update = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
 
-    setTimeout(() => {
+    try {
+      await api.post('/portal/bookings', {
+        service_type: form.service_type,
+        preferred_date: form.preferred_date || null,
+        description: form.description,
+      })
       toast.success('Booking request submitted')
       setForm({ service_type: '', preferred_date: '', description: '' })
+      loadBookings()
+    } catch {
+      toast.error('Failed to submit booking. Please try again.')
+    } finally {
       setLoading(false)
-    }, 500)
+    }
   }
 
   return (
@@ -83,7 +108,6 @@ export default function PortalBookings() {
                   value={form.preferred_date}
                   onChange={(e) => update('preferred_date', e.target.value)}
                   leftIcon={<CalendarDays size={16} />}
-                  required
                 />
 
                 <div>
@@ -94,6 +118,7 @@ export default function PortalBookings() {
                     rows={6}
                     value={form.description}
                     onChange={(e) => update('description', e.target.value)}
+                    required
                     className="w-full rounded-2xl border border-willbry-green-100 px-4 py-3 text-sm outline-none focus:border-willbry-teal focus:ring-4 focus:ring-willbry-teal/15"
                   />
                 </div>
@@ -107,21 +132,29 @@ export default function PortalBookings() {
             <section className="rounded-[2rem] bg-white p-6 shadow-card sm:p-8">
               <h2 className="text-2xl font-black text-willbry-green-900">Upcoming requests</h2>
 
-              <div className="mt-6 space-y-4">
-                {bookings.map((booking) => (
-                  <div key={booking.id} className="rounded-2xl border border-willbry-green-100 p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="font-black text-willbry-green-900">
-                          {booking.service_type}
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-500">{booking.preferred_date}</p>
+              {fetching ? (
+                <div className="mt-6 flex items-center justify-center py-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-willbry-green-500" />
+                </div>
+              ) : bookings.length === 0 ? (
+                <p className="mt-6 text-sm text-gray-500">No bookings yet.</p>
+              ) : (
+                <div className="mt-6 space-y-4">
+                  {bookings.map((booking) => (
+                    <div key={booking.id} className="rounded-2xl border border-willbry-green-100 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="font-black text-willbry-green-900">
+                            {booking.service_type}
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">{booking.preferred_date ?? '—'}</p>
+                        </div>
+                        <Badge variant="yellow" dot>{booking.status}</Badge>
                       </div>
-                      <Badge variant="yellow" dot>{booking.status}</Badge>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
         </div>

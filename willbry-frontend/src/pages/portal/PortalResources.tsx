@@ -1,9 +1,11 @@
-import { Bot, Download, FileText, Package, Search, ShoppingBag } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Bot, Download, FileText, Loader2, Package, Search, ShoppingBag } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import ResourceCard from '../../components/portal/ResourceCard'
 import type { ResourceItem } from '../../components/portal/ResourceCard'
 import { Input } from '../../components/ui/Input'
+import api from '../../lib/api'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -13,32 +15,23 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const resources: ResourceItem[] = [
-  {
-    id: 'r1',
-    title: 'Irish Potato Production Guide',
-    description: 'A practical guide for better potato production in highland conditions.',
-    category: 'Crop Guides',
-    download_count: 124,
-  },
-  {
-    id: 'r2',
-    title: 'Post-Harvest Handling Manual',
-    description: 'Guidance for reducing losses after harvest and improving market quality.',
-    category: 'Training',
-    download_count: 89,
-  },
-  {
-    id: 'r3',
-    title: 'Value Addition Starter Checklist',
-    description: 'A simple checklist for turning raw produce into market-ready products.',
-    category: 'Business',
-    download_count: 57,
-  },
-]
-
 export default function PortalResources() {
   const [query, setQuery] = useState('')
+  const [resources, setResources] = useState<ResourceItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    api.get('/portal/resources')
+      .then((res) => {
+        const data = res.data?.data ?? res.data
+        setResources(Array.isArray(data) ? data : [])
+      })
+      .catch(() => setError('Failed to load resources. Please try again.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = useMemo(() => {
     const search = query.toLowerCase()
@@ -48,7 +41,22 @@ export default function PortalResources() {
         resource.description?.toLowerCase().includes(search) ||
         resource.category.toLowerCase().includes(search)
     )
-  }, [query])
+  }, [query, resources])
+
+  const handleDownload = async (resource: ResourceItem) => {
+    try {
+      const res = await api.get(`/portal/resources/${resource.id}/download`)
+      const data = res.data?.download_url ? res.data : res.data?.data
+      const url = data?.download_url ?? resource.file_url
+      if (url) {
+        window.open(url, '_blank')
+      } else {
+        toast.error('Download link not available')
+      }
+    } catch {
+      toast.error('Failed to get download link')
+    }
+  }
 
   return (
     <main className="flex min-h-screen bg-willbry-light">
@@ -80,17 +88,33 @@ export default function PortalResources() {
             />
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-3">
-            {filtered.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
-            ))}
-          </div>
-
-          {!filtered.length && (
-            <div className="rounded-3xl border border-dashed border-willbry-green-200 bg-white p-12 text-center">
-              <p className="font-black text-willbry-green-900">No resources found.</p>
-              <p className="mt-2 text-sm text-gray-500">Try another search term.</p>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-willbry-green-500" />
             </div>
+          ) : error ? (
+            <div className="rounded-3xl border border-dashed border-red-200 bg-red-50 p-12 text-center">
+              <p className="font-black text-red-700">{error}</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-5 lg:grid-cols-3">
+                {filtered.map((resource) => (
+                  <ResourceCard
+                    key={resource.id}
+                    resource={resource}
+                    onDownload={handleDownload}
+                  />
+                ))}
+              </div>
+
+              {!filtered.length && (
+                <div className="rounded-3xl border border-dashed border-willbry-green-200 bg-white p-12 text-center">
+                  <p className="font-black text-willbry-green-900">No resources found.</p>
+                  <p className="mt-2 text-sm text-gray-500">Try another search term.</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

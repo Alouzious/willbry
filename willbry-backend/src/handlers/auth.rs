@@ -62,6 +62,21 @@ pub async fn register(
         state.config.jwt_access_expiry,
     )?;
 
+    let refresh_token = create_refresh_token(
+        user.id,
+        &user.email,
+        &user.role,
+        &state.config.jwt_secret,
+        state.config.jwt_refresh_expiry,
+    )?;
+
+    sqlx::query("INSERT INTO refresh_tokens (id, user_id, token) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
+        .bind(Uuid::new_v4())
+        .bind(user.id)
+        .bind(&refresh_token)
+        .execute(&state.db)
+        .await?;
+
     // Send welcome email (non-blocking)
     let email_html = welcome_email_html(&user.full_name);
     let _ = send_email(
@@ -75,6 +90,7 @@ pub async fn register(
     Ok(Json(json!({
         "success": true,
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "user": user,
         "message": "Registration successful"
     })))

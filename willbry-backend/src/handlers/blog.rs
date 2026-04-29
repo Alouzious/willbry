@@ -6,7 +6,7 @@ use crate::{
     AppState,
     errors::{AppError, AppResult},
     middleware::admin::AdminUser,
-    models::blog::{BlogPost, CreatePostRequest, UpdatePostRequest, BlogQuery},
+    models::blog::{BlogPost, BlogPostWithAuthor, CreatePostRequest, UpdatePostRequest, BlogQuery},
 };
 
 pub async fn list_posts(
@@ -17,8 +17,13 @@ pub async fn list_posts(
     let per_page = q.per_page.unwrap_or(10).min(50);
     let offset = (page - 1) * per_page;
 
-    let posts = sqlx::query_as::<_, BlogPost>(
-        "SELECT * FROM blog_posts WHERE published = true ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+    let posts = sqlx::query_as::<_, BlogPostWithAuthor>(
+        r#"SELECT b.*, COALESCE(u.full_name, 'WillBry Team') AS author_name
+           FROM blog_posts b
+           LEFT JOIN users u ON u.id = b.author_id
+           WHERE b.published = true
+           ORDER BY b.created_at DESC
+           LIMIT $1 OFFSET $2"#
     )
     .bind(per_page)
     .bind(offset)
@@ -40,8 +45,11 @@ pub async fn get_post(
     State(state): State<AppState>,
     Path(slug): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let post = sqlx::query_as::<_, BlogPost>(
-        "SELECT * FROM blog_posts WHERE slug = $1 AND published = true"
+    let post = sqlx::query_as::<_, BlogPostWithAuthor>(
+        r#"SELECT b.*, COALESCE(u.full_name, 'WillBry Team') AS author_name
+           FROM blog_posts b
+           LEFT JOIN users u ON u.id = b.author_id
+           WHERE b.slug = $1 AND b.published = true"#
     )
     .bind(&slug)
     .fetch_optional(&state.db)

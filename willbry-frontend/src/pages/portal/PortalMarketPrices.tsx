@@ -1,7 +1,8 @@
-import { Bot, Download, FileText, Package, ShoppingBag, TrendingDown, TrendingUp } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Bot, Download, FileText, Loader2, Package, ShoppingBag, TrendingDown, TrendingUp } from 'lucide-react'
 import Sidebar from '../../components/layout/Sidebar'
 import { Badge } from '../../components/ui/Badge'
-import AnalyticsChart from '../../components/admin/AnalyticsChart'
+import api from '../../lib/api'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -11,23 +12,31 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const prices = [
-  { commodity: 'Irish Potatoes', price: 1200, unit: 'kg', change: 8 },
-  { commodity: 'Maize', price: 950, unit: 'kg', change: -3 },
-  { commodity: 'Beans', price: 3200, unit: 'kg', change: 5 },
-  { commodity: 'Coffee', price: 7800, unit: 'kg', change: 11 },
-  { commodity: 'Sorghum', price: 1600, unit: 'kg', change: 2 },
-]
-
-const chartData = [
-  { name: 'Jan', value: 900 },
-  { name: 'Feb', value: 980 },
-  { name: 'Mar', value: 1040 },
-  { name: 'Apr', value: 1100 },
-  { name: 'May', value: 1200 },
-]
+interface CommodityPrice {
+  id: string
+  commodity: string
+  price_ugx: number
+  unit: string
+  change_percent: number | null
+}
 
 export default function PortalMarketPrices() {
+  const [prices, setPrices] = useState<CommodityPrice[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    api.get('/portal/market-prices')
+      .then((res) => {
+        const data = res.data?.data ?? res.data
+        setPrices(Array.isArray(data) ? data : [])
+      })
+      .catch(() => setError('Failed to load market prices. Please try again.'))
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <main className="flex min-h-screen bg-willbry-light">
       <div className="hidden lg:block">
@@ -48,7 +57,15 @@ export default function PortalMarketPrices() {
             </p>
           </div>
 
-          <div className="grid gap-8 xl:grid-cols-[.95fr_1.05fr]">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-willbry-green-500" />
+            </div>
+          ) : error ? (
+            <div className="rounded-3xl border border-dashed border-red-200 bg-red-50 p-12 text-center">
+              <p className="font-black text-red-700">{error}</p>
+            </div>
+          ) : (
             <div className="overflow-hidden rounded-3xl border border-willbry-green-100 bg-white shadow-card">
               <table className="w-full text-left">
                 <thead className="bg-willbry-light">
@@ -66,38 +83,44 @@ export default function PortalMarketPrices() {
                 </thead>
 
                 <tbody className="divide-y divide-willbry-green-100">
-                  {prices.map((item) => {
-                    const up = item.change >= 0
-                    const Icon = up ? TrendingUp : TrendingDown
+                  {prices.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-12 text-center text-sm text-gray-500">
+                        No price data available yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    prices.map((item) => {
+                      const change = item.change_percent ?? 0
+                      const up = change >= 0
+                      const Icon = up ? TrendingUp : TrendingDown
 
-                    return (
-                      <tr key={item.commodity} className="hover:bg-willbry-light">
-                        <td className="px-6 py-4 font-black text-willbry-green-900">
-                          {item.commodity}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-bold text-gray-700">
-                          UGX {item.price.toLocaleString()} / {item.unit}
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge variant={up ? 'green' : 'red'}>
-                            <Icon size={13} />
-                            {Math.abs(item.change)}%
-                          </Badge>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                      return (
+                        <tr key={item.id} className="hover:bg-willbry-light">
+                          <td className="px-6 py-4 font-black text-willbry-green-900">
+                            {item.commodity}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-bold text-gray-700">
+                            UGX {item.price_ugx.toLocaleString()} / {item.unit}
+                          </td>
+                          <td className="px-6 py-4">
+                            {item.change_percent != null ? (
+                              <Badge variant={up ? 'green' : 'red'}>
+                                <Icon size={13} />
+                                {Math.abs(change)}%
+                              </Badge>
+                            ) : (
+                              <span className="text-sm text-gray-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
-
-            <AnalyticsChart
-              title="Irish potato price trend"
-              description="Indicative price movement over recent months."
-              data={chartData}
-              type="line"
-            />
-          </div>
+          )}
         </div>
       </section>
     </main>
