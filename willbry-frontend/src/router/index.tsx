@@ -2,7 +2,6 @@ import { createBrowserRouter } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import AdminRoute from './AdminRoute'
 
-// Public pages
 import HomePage from '../pages/public/HomePage'
 import AboutPage from '../pages/public/AboutPage'
 import ServicesPage from '../pages/public/ServicesPage'
@@ -16,12 +15,10 @@ import FarmerDirectoryPage from '../pages/public/FarmerDirectoryPage'
 import ContactPage from '../pages/public/ContactPage'
 import NotFoundPage from '../pages/public/NotFoundPage'
 
-// Auth pages
 import LoginPage from '../pages/auth/LoginPage'
 import RegisterPage from '../pages/auth/RegisterPage'
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage'
 
-// Portal pages
 import PortalDashboard from '../pages/portal/PortalDashboard'
 import PortalOrders from '../pages/portal/PortalOrders'
 import PortalOrderDetail from '../pages/portal/PortalOrderDetail'
@@ -32,9 +29,9 @@ import PortalMarketPrices from '../pages/portal/PortalMarketPrices'
 import PortalBookings from '../pages/portal/PortalBookings'
 import PortalSettings from '../pages/portal/PortalSettings'
 
-// Admin pages
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import AdminUsers from '../pages/admin/AdminUsers'
+import AdminUserDetail from '../pages/admin/AdminUserDetail'
 import AdminOrders from '../pages/admin/AdminOrders'
 import AdminInquiries from '../pages/admin/AdminInquiries'
 import AdminBlog from '../pages/admin/AdminBlog'
@@ -48,7 +45,6 @@ import AdminAiConfig from '../pages/admin/AdminAiConfig'
 import AdminAnalytics from '../pages/admin/AdminAnalytics'
 
 export const router = createBrowserRouter([
-  // Public
   { path: '/', element: <HomePage /> },
   { path: '/about', element: <AboutPage /> },
   { path: '/services', element: <ServicesPage /> },
@@ -61,12 +57,10 @@ export const router = createBrowserRouter([
   { path: '/farmers', element: <FarmerDirectoryPage /> },
   { path: '/contact', element: <ContactPage /> },
 
-  // Auth
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
 
-  // Portal (protected)
   {
     element: <ProtectedRoute />,
     children: [
@@ -82,12 +76,12 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Admin (admin only)
   {
     element: <AdminRoute />,
     children: [
       { path: '/admin', element: <AdminDashboard /> },
       { path: '/admin/users', element: <AdminUsers /> },
+      { path: '/admin/users/:id', element: <AdminUserDetail /> },
       { path: '/admin/orders', element: <AdminOrders /> },
       { path: '/admin/inquiries', element: <AdminInquiries /> },
       { path: '/admin/blog', element: <AdminBlog /> },

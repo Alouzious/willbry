@@ -1,60 +1,73 @@
-import type { LucideIcon } from 'lucide-react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
-interface AdminStat {
-  label: string
-  value: string | number
-  icon: LucideIcon
-  trend?: string
-  trendDirection?: 'up' | 'down'
+export interface ChartDataPoint {
+  name: string
+  value: number
+  [key: string]: string | number
+}
+
+interface AnalyticsChartProps {
+  title: string
   description?: string
+  data: ChartDataPoint[]
+  type?: 'line' | 'bar'
+  dataKey?: string
 }
 
-interface AdminStatsProps {
-  stats: AdminStat[]
-}
-
-export default function AdminStats({ stats }: AdminStatsProps) {
+export default function AnalyticsChart({
+  title,
+  description,
+  data,
+  type = 'line',
+  dataKey = 'value',
+}: AnalyticsChartProps) {
   return (
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map(({ label, value, icon: Icon, trend, trendDirection = 'up', description }) => {
-        const TrendIcon = trendDirection === 'up' ? TrendingUp : TrendingDown
+    <section className="rounded-3xl border border-willbry-green-100 bg-white p-6 shadow-card">
+      <div className="mb-6">
+        <h3 className="text-lg font-black tracking-tight text-willbry-green-900">
+          {title}
+        </h3>
+        {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
+      </div>
 
-        return (
-          <article
-            key={label}
-            className="rounded-3xl border border-willbry-green-100 bg-white p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-willbry-green-50 text-willbry-green-600">
-                <Icon size={22} />
-              </div>
-
-              {trend && (
-                <span
-                  className={[
-                    'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black',
-                    trendDirection === 'up'
-                      ? 'bg-green-50 text-green-700'
-                      : 'bg-red-50 text-red-700',
-                  ].join(' ')}
-                >
-                  <TrendIcon size={13} />
-                  {trend}
-                </span>
-              )}
-            </div>
-
-            <div className="mt-5">
-              <p className="text-sm font-bold text-gray-500">{label}</p>
-              <p className="mt-2 text-3xl font-black tracking-tight text-willbry-green-900">
-                {value}
-              </p>
-              {description && <p className="mt-2 text-sm text-gray-500">{description}</p>}
-            </div>
-          </article>
-        )
-      })}
-    </div>
+      <div className="h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          {type === 'bar' ? (
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0f0e4" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#6b7f72" />
+              <YAxis tick={{ fontSize: 12 }} stroke="#6b7f72" />
+              <Tooltip />
+              <Bar dataKey={dataKey} fill="#2d6a4f" radius={[10, 10, 0, 0]} />
+            </BarChart>
+          ) : (
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0f0e4" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#6b7f72" />
+              <YAxis tick={{ fontSize: 12 }} stroke="#6b7f72" />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey={dataKey}
+                stroke="#2d6a4f"
+                strokeWidth={3}
+                dot={{ r: 4, fill: '#52b788' }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+    </section>
   )
 }
