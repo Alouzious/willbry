@@ -9,7 +9,6 @@ import {
   Loader2,
   MessageCircle,
   Package,
-  Settings,
   ShoppingBag,
   TrendingUp,
   Users,

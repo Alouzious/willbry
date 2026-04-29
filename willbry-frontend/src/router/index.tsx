@@ -35,6 +35,7 @@ import PortalSettings from '../pages/portal/PortalSettings'
 // Admin pages
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import AdminUsers from '../pages/admin/AdminUsers'
+import AdminUserDetail from '../pages/admin/AdminUserDetail'
 import AdminOrders from '../pages/admin/AdminOrders'
 import AdminInquiries from '../pages/admin/AdminInquiries'
 import AdminBlog from '../pages/admin/AdminBlog'
@@ -88,6 +89,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/admin', element: <AdminDashboard /> },
       { path: '/admin/users', element: <AdminUsers /> },
+      { path: '/admin/users/:id', element: <AdminUserDetail /> },
       { path: '/admin/orders', element: <AdminOrders /> },
       { path: '/admin/inquiries', element: <AdminInquiries /> },
       { path: '/admin/blog', element: <AdminBlog /> },
