@@ -1,22 +1,11 @@
-import { useState } from 'react'
-import {
-  BarChart3,
-  Bot,
-  Edit3,
-  FileText,
-  Image,
-  Package,
-  Plus,
-  Settings,
-  ShoppingBag,
-  Trash2,
-  Users,
-} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { BarChart3, Bot, FileText, Image, Package, Search, Settings, ShoppingBag, Users } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
-import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
-import { formatCurrency } from '../../lib/utils'
-import type { Product } from '../../types'
+import UsersTable from '../../components/admin/UsersTable'
+import { Input } from '../../components/ui/Input'
+import { adminListUsers, adminUpdateUser } from '../../services/admin.service'
+import type { User } from '../../types'
 
 const adminItems = [
   { label: 'Dashboard', href: '/admin', icon: BarChart3 },
@@ -29,33 +18,43 @@ const adminItems = [
   { label: 'Analytics', href: '/admin/analytics', icon: Settings },
 ]
 
-const products: Product[] = [
-  {
-    id: 'p1',
-    name: 'SmartCrisps',
-    slug: 'smartcrisps',
-    description: 'Premium potato crisps made through local value addition.',
-    price: 5000,
-    unit: 'pack',
-    category: 'food',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p2',
-    name: 'SmartFlour',
-    slug: 'smartflour',
-    description: 'Fortified flour supporting nutrition and local value chains.',
-    price: 12000,
-    unit: 'kg',
-    category: 'food',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-]
+export default function AdminUsers() {
+  const [users, setUsers] = useState<User[]>([])
+  const [query, setQuery] = useState('')
 
-export default function AdminProducts() {
-  const [items] = useState(products)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await adminListUsers()
+        setUsers(Array.isArray(data) ? data : [])
+      } catch {
+        toast.error('Failed to load users')
+      }
+    }
+    void load()
+  }, [])
+
+  const filtered = useMemo(() => {
+    const search = query.toLowerCase()
+    return users.filter(
+      (user) =>
+        user.full_name.toLowerCase().includes(search) ||
+        user.email.toLowerCase().includes(search) ||
+        user.user_type.toLowerCase().includes(search)
+    )
+  }, [query, users])
+
+  const handleToggleActive = async (user: User) => {
+    try {
+      await adminUpdateUser(user.id, { active: !user.active })
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, active: !u.active } : u))
+      )
+      toast.success(`${user.full_name} status updated`)
+    } catch {
+      toast.error('Failed to update user')
+    }
+  }
 
   return (
     <main className="flex min-h-screen bg-willbry-light">
@@ -65,70 +64,27 @@ export default function AdminProducts() {
 
       <section className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_.42fr] lg:items-end">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.25em] text-willbry-teal">
-                Product CMS
+                User management
               </p>
               <h1 className="mt-3 text-4xl font-black tracking-tight text-willbry-green-900">
-                Manage marketplace products
+                Farmers, clients, partners, and staff
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
-                Update food products, training packages, digital services, and consultancy offers.
+                Manage platform accounts, user types, roles, verification, and access status.
               </p>
             </div>
-
-            <Button leftIcon={<Plus size={16} />}>Add Product</Button>
+            <Input
+              placeholder="Search users..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              leftIcon={<Search size={17} />}
+            />
           </div>
 
-          <div className="overflow-hidden rounded-3xl border border-willbry-green-100 bg-white shadow-card">
-            <table className="w-full min-w-[850px] text-left">
-              <thead className="bg-willbry-light">
-                <tr>
-                  {['Product', 'Category', 'Price', 'Status', 'Actions'].map((head) => (
-                    <th
-                      key={head}
-                      className="px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-willbry-green-700"
-                    >
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-willbry-green-100">
-                {items.map((product) => (
-                  <tr key={product.id} className="hover:bg-willbry-light">
-                    <td className="px-6 py-4">
-                      <p className="font-black text-willbry-green-900">{product.name}</p>
-                      <p className="max-w-md text-xs leading-5 text-gray-500">{product.description}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge variant="teal">{product.category}</Badge>
-                    </td>
-                    <td className="px-6 py-4 font-black text-willbry-green-900">
-                      {product.price ? formatCurrency(product.price) : 'Quote'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge variant={product.active ? 'green' : 'gray'} dot>
-                        {product.active ? 'Active' : 'Hidden'}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="secondary" leftIcon={<Edit3 size={15} />}>
-                          Edit
-                        </Button>
-                        <Button size="sm" variant="danger" leftIcon={<Trash2 size={15} />}>
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <UsersTable users={filtered} onToggleActive={handleToggleActive} />
         </div>
       </section>
     </main>

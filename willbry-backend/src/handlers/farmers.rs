@@ -9,6 +9,21 @@ use crate::{
     models::farmer::{Farmer, CreateFarmerRequest, UpdateFarmerRequest, FarmerQuery},
 };
 
+/// List active farmers in the directory
+#[utoipa::path(
+    get,
+    path = "/api/farmers",
+    tag = "farmers",
+    params(
+        ("page" = Option<i64>, Query, description = "Page number (default 1)"),
+        ("per_page" = Option<i64>, Query, description = "Items per page (default 20, max 100)"),
+        ("district" = Option<String>, Query, description = "Filter by district"),
+        ("search" = Option<String>, Query, description = "Search by name"),
+    ),
+    responses(
+        (status = 200, description = "List of active farmers", body = Vec<Farmer>),
+    )
+)]
 pub async fn list_farmers(
     State(state): State<AppState>,
     Query(q): Query<FarmerQuery>,
@@ -28,6 +43,17 @@ pub async fn list_farmers(
     Ok(Json(json!({ "success": true, "data": farmers })))
 }
 
+/// [Admin] List all farmers including inactive
+#[utoipa::path(
+    get,
+    path = "/api/admin/farmers",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All farmers", body = Vec<Farmer>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_list_farmers(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -41,6 +67,18 @@ pub async fn admin_list_farmers(
     Ok(Json(json!({ "success": true, "data": farmers })))
 }
 
+/// [Admin] Add a farmer to the directory
+#[utoipa::path(
+    post,
+    path = "/api/admin/farmers",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    request_body = CreateFarmerRequest,
+    responses(
+        (status = 200, description = "Farmer created", body = Farmer),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn create_farmer(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -62,6 +100,21 @@ pub async fn create_farmer(
     Ok(Json(json!({ "success": true, "data": farmer })))
 }
 
+/// [Admin] Update farmer details
+#[utoipa::path(
+    put,
+    path = "/api/admin/farmers/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Farmer UUID")
+    ),
+    request_body = UpdateFarmerRequest,
+    responses(
+        (status = 200, description = "Farmer updated", body = Farmer),
+        (status = 404, description = "Farmer not found"),
+    )
+)]
 pub async fn update_farmer(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -89,6 +142,20 @@ pub async fn update_farmer(
     Ok(Json(json!({ "success": true, "data": farmer })))
 }
 
+/// [Admin] Remove a farmer from the directory (soft-delete)
+#[utoipa::path(
+    delete,
+    path = "/api/admin/farmers/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Farmer UUID")
+    ),
+    responses(
+        (status = 200, description = "Farmer removed"),
+        (status = 404, description = "Farmer not found"),
+    )
+)]
 pub async fn delete_farmer(
     State(state): State<AppState>,
     _admin: AdminUser,

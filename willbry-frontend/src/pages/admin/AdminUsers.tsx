@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { BarChart3, Bot, FileText, Image, Package, Search, Settings, ShoppingBag, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import UsersTable from '../../components/admin/UsersTable'
 import { Input } from '../../components/ui/Input'
+import { adminListUsers, adminUpdateUser } from '../../services/admin.service'
 import type { User } from '../../types'
 
 const adminItems = [
@@ -17,32 +18,21 @@ const adminItems = [
   { label: 'Analytics', href: '/admin/analytics', icon: Settings },
 ]
 
-const users: User[] = [
-  {
-    id: 'u1',
-    full_name: 'Farmer Cooperative Lead',
-    email: 'farmer@willbry.com',
-    phone: '+256700000001',
-    role: 'user',
-    user_type: 'farmer',
-    verified: true,
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'u2',
-    full_name: 'WillBry Admin',
-    email: 'admin@willbry.com',
-    role: 'admin',
-    user_type: 'partner',
-    verified: true,
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-]
-
 export default function AdminUsers() {
+  const [users, setUsers] = useState<User[]>([])
   const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await adminListUsers()
+        setUsers(Array.isArray(data) ? data : [])
+      } catch {
+        toast.error('Failed to load users')
+      }
+    }
+    void load()
+  }, [])
 
   const filtered = useMemo(() => {
     const search = query.toLowerCase()
@@ -52,7 +42,19 @@ export default function AdminUsers() {
         user.email.toLowerCase().includes(search) ||
         user.user_type.toLowerCase().includes(search)
     )
-  }, [query])
+  }, [query, users])
+
+  const handleToggleActive = async (user: User) => {
+    try {
+      await adminUpdateUser(user.id, { active: !user.active })
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, active: !u.active } : u))
+      )
+      toast.success(`${user.full_name} status updated`)
+    } catch {
+      toast.error('Failed to update user')
+    }
+  }
 
   return (
     <main className="flex min-h-screen bg-willbry-light">
@@ -74,7 +76,6 @@ export default function AdminUsers() {
                 Manage platform accounts, user types, roles, verification, and access status.
               </p>
             </div>
-
             <Input
               placeholder="Search users..."
               value={query}
@@ -83,10 +84,7 @@ export default function AdminUsers() {
             />
           </div>
 
-          <UsersTable
-            users={filtered}
-            onToggleActive={(user) => toast.success(`${user.full_name} status updated`)}
-          />
+          <UsersTable users={filtered} onToggleActive={handleToggleActive} />
         </div>
       </section>
     </main>

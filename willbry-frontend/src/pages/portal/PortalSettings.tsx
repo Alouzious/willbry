@@ -5,6 +5,8 @@ import Sidebar from '../../components/layout/Sidebar'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../../hooks/useAuth'
+import { updateProfile } from '../../services/portal.service'
+import { setUser } from '../../lib/auth'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -20,22 +22,24 @@ export default function PortalSettings() {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     full_name: user?.full_name ?? '',
-    email: user?.email ?? '',
     phone: user?.phone ?? '',
   })
 
-  const update = (key: keyof typeof form, value: string) => {
+  const update = (key: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))
-  }
 
-  const save = (event: React.FormEvent) => {
+  const save = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
-
-    setTimeout(() => {
+    try {
+      const updated = await updateProfile({ full_name: form.full_name, phone: form.phone })
+      setUser(updated)
       toast.success('Settings saved')
+    } catch {
+      toast.error('Failed to save settings')
+    } finally {
       setLoading(false)
-    }, 500)
+    }
   }
 
   return (
@@ -68,15 +72,15 @@ export default function PortalSettings() {
               <Input
                 label="Email address"
                 type="email"
-                value={form.email}
-                onChange={(e) => update('email', e.target.value)}
+                value={user?.email ?? ''}
+                disabled
+                hint="Email cannot be changed."
               />
               <Input
                 label="Phone number"
                 value={form.phone}
                 onChange={(e) => update('phone', e.target.value)}
               />
-
               <div className="pt-3">
                 <Button type="submit" loading={loading} leftIcon={<Save size={16} />}>
                   Save Settings

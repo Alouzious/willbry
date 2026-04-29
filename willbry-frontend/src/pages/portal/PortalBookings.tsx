@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bot, CalendarDays, Download, FileText, Package, Send, ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Badge } from '../../components/ui/Badge'
+import { listMyBookings, createBooking } from '../../services/portal.service'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -14,36 +15,43 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const bookings = [
-  {
-    id: 'bk1',
-    service_type: 'Value Addition Advisory',
-    preferred_date: '2026-05-03',
-    status: 'requested',
-  },
-]
-
 export default function PortalBookings() {
+  const [bookings, setBookings] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({
-    service_type: '',
-    preferred_date: '',
-    description: '',
-  })
+  const [form, setForm] = useState({ service_type: '', preferred_date: '', description: '' })
 
-  const update = (key: keyof typeof form, value: string) => {
+  const update = (key: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))
-  }
 
-  const submit = (event: React.FormEvent) => {
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await listMyBookings()
+        setBookings(Array.isArray(data) ? data : [])
+      } catch {
+        toast.error('Failed to load bookings')
+      }
+    }
+    void load()
+  }, [])
+
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
-
-    setTimeout(() => {
-      toast.success('Booking request submitted')
+    try {
+      const created = await createBooking({
+        service_type: form.service_type,
+        preferred_date: form.preferred_date || undefined,
+        description: form.description,
+      })
+      setBookings((prev) => [created, ...prev])
       setForm({ service_type: '', preferred_date: '', description: '' })
+      toast.success('Booking request submitted')
+    } catch {
+      toast.error('Failed to submit booking')
+    } finally {
       setLoading(false)
-    }, 500)
+    }
   }
 
   return (
@@ -69,7 +77,6 @@ export default function PortalBookings() {
           <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
             <form onSubmit={submit} className="rounded-[2rem] bg-white p-6 shadow-card sm:p-8">
               <h2 className="text-2xl font-black text-willbry-green-900">New booking</h2>
-
               <div className="mt-6 grid gap-5">
                 <Input
                   label="Service type"
@@ -83,9 +90,7 @@ export default function PortalBookings() {
                   value={form.preferred_date}
                   onChange={(e) => update('preferred_date', e.target.value)}
                   leftIcon={<CalendarDays size={16} />}
-                  required
                 />
-
                 <div>
                   <label className="mb-1.5 block text-sm font-black text-willbry-green-900">
                     Description
@@ -94,10 +99,10 @@ export default function PortalBookings() {
                     rows={6}
                     value={form.description}
                     onChange={(e) => update('description', e.target.value)}
+                    required
                     className="w-full rounded-2xl border border-willbry-green-100 px-4 py-3 text-sm outline-none focus:border-willbry-teal focus:ring-4 focus:ring-willbry-teal/15"
                   />
                 </div>
-
                 <Button type="submit" loading={loading} rightIcon={<Send size={16} />}>
                   Submit Booking
                 </Button>
@@ -105,22 +110,23 @@ export default function PortalBookings() {
             </form>
 
             <section className="rounded-[2rem] bg-white p-6 shadow-card sm:p-8">
-              <h2 className="text-2xl font-black text-willbry-green-900">Upcoming requests</h2>
-
+              <h2 className="text-2xl font-black text-willbry-green-900">Your bookings</h2>
               <div className="mt-6 space-y-4">
-                {bookings.map((booking) => (
-                  <div key={booking.id} className="rounded-2xl border border-willbry-green-100 p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="font-black text-willbry-green-900">
-                          {booking.service_type}
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-500">{booking.preferred_date}</p>
+                {bookings.length === 0 ? (
+                  <p className="text-sm text-gray-500">No bookings yet.</p>
+                ) : (
+                  bookings.map((booking) => (
+                    <div key={booking.id} className="rounded-2xl border border-willbry-green-100 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="font-black text-willbry-green-900">{booking.service_type}</h3>
+                          <p className="mt-1 text-sm text-gray-500">{booking.preferred_date}</p>
+                        </div>
+                        <Badge variant="yellow" dot>{booking.status}</Badge>
                       </div>
-                      <Badge variant="yellow" dot>{booking.status}</Badge>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </section>
           </div>

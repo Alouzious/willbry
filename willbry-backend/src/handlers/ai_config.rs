@@ -10,6 +10,17 @@ use crate::{
     services::groq::default_system_prompt,
 };
 
+/// [Admin] Get the current AI assistant configuration
+#[utoipa::path(
+    get,
+    path = "/api/admin/ai-config",
+    tag = "ai_config",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Current AI config (seeds default if none exists)", body = AiConfig),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn get_config(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -24,7 +35,6 @@ pub async fn get_config(
         return Ok(Json(json!({ "success": true, "data": c })));
     }
 
-    // Seed default if none exists
     let default = sqlx::query_as::<_, AiConfig>(
         "INSERT INTO ai_config (id, system_prompt, model, language) VALUES ($1, $2, $3, $4) RETURNING *"
     )
@@ -38,12 +48,23 @@ pub async fn get_config(
     Ok(Json(json!({ "success": true, "data": default })))
 }
 
+/// [Admin] Update the AI assistant configuration
+#[utoipa::path(
+    put,
+    path = "/api/admin/ai-config",
+    tag = "ai_config",
+    security(("bearer_auth" = [])),
+    request_body = UpdateAiConfigRequest,
+    responses(
+        (status = 200, description = "AI config updated", body = AiConfig),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn update_config(
     State(state): State<AppState>,
     _admin: AdminUser,
     Json(body): Json<UpdateAiConfigRequest>,
 ) -> AppResult<Json<Value>> {
-    // Get existing or create
     let existing = sqlx::query_scalar::<_, Uuid>(
         "SELECT id FROM ai_config ORDER BY updated_at DESC LIMIT 1"
     )

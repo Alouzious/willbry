@@ -9,6 +9,15 @@ use crate::{
     models::product::{Product, CreateProductRequest, UpdateProductRequest},
 };
 
+/// List all active products
+#[utoipa::path(
+    get,
+    path = "/api/products",
+    tag = "products",
+    responses(
+        (status = 200, description = "List of active products", body = Vec<Product>),
+    )
+)]
 pub async fn list_products(State(state): State<AppState>) -> AppResult<Json<Value>> {
     let products = sqlx::query_as::<_, Product>(
         "SELECT * FROM products WHERE active = true ORDER BY created_at DESC"
@@ -19,6 +28,19 @@ pub async fn list_products(State(state): State<AppState>) -> AppResult<Json<Valu
     Ok(Json(json!({ "success": true, "data": products })))
 }
 
+/// Get a single product by slug
+#[utoipa::path(
+    get,
+    path = "/api/products/{slug}",
+    tag = "products",
+    params(
+        ("slug" = String, Path, description = "Product slug")
+    ),
+    responses(
+        (status = 200, description = "Product details", body = Product),
+        (status = 404, description = "Product not found"),
+    )
+)]
 pub async fn get_product(
     State(state): State<AppState>,
     Path(slug): Path<String>,
@@ -34,6 +56,18 @@ pub async fn get_product(
     Ok(Json(json!({ "success": true, "data": product })))
 }
 
+/// [Admin] List all products including inactive
+#[utoipa::path(
+    get,
+    path = "/api/admin/products",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All products", body = Vec<Product>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_list_products(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -47,6 +81,19 @@ pub async fn admin_list_products(
     Ok(Json(json!({ "success": true, "data": products })))
 }
 
+/// [Admin] Create a new product
+#[utoipa::path(
+    post,
+    path = "/api/admin/products",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    request_body = CreateProductRequest,
+    responses(
+        (status = 200, description = "Product created", body = Product),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn create_product(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -72,6 +119,21 @@ pub async fn create_product(
     Ok(Json(json!({ "success": true, "data": product })))
 }
 
+/// [Admin] Update a product by ID
+#[utoipa::path(
+    put,
+    path = "/api/admin/products/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Product UUID")
+    ),
+    request_body = UpdateProductRequest,
+    responses(
+        (status = 200, description = "Product updated", body = Product),
+        (status = 404, description = "Product not found"),
+    )
+)]
 pub async fn update_product(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -107,6 +169,20 @@ pub async fn update_product(
     Ok(Json(json!({ "success": true, "data": product })))
 }
 
+/// [Admin] Soft-delete a product by ID
+#[utoipa::path(
+    delete,
+    path = "/api/admin/products/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Product UUID")
+    ),
+    responses(
+        (status = 200, description = "Product deleted"),
+        (status = 404, description = "Product not found"),
+    )
+)]
 pub async fn delete_product(
     State(state): State<AppState>,
     _admin: AdminUser,

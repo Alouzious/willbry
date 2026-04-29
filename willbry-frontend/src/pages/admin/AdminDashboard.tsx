@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   BarChart3,
@@ -9,9 +10,11 @@ import {
   ShoppingBag,
   Users,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import AdminStats from '../../components/admin/AdminStats'
 import AnalyticsChart from '../../components/admin/AnalyticsChart'
+import { getAdminDashboard } from '../../services/admin.service'
 
 const adminItems = [
   { label: 'Dashboard', href: '/admin', icon: BarChart3 },
@@ -24,16 +27,24 @@ const adminItems = [
   { label: 'Analytics', href: '/admin/analytics', icon: Settings },
 ]
 
-const chartData = [
-  { name: 'Jan', value: 18, orders: 8 },
-  { name: 'Feb', value: 32, orders: 14 },
-  { name: 'Mar', value: 46, orders: 21 },
-  { name: 'Apr', value: 63, orders: 30 },
-  { name: 'May', value: 81, orders: 42 },
-  { name: 'Jun', value: 104, orders: 57 },
-]
-
 export default function AdminDashboard() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const result = await getAdminDashboard()
+        setData(result)
+      } catch {
+        toast.error('Failed to load dashboard')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
+
   return (
     <main className="flex min-h-screen bg-willbry-light">
       <div className="hidden lg:block">
@@ -56,27 +67,29 @@ export default function AdminDashboard() {
 
           <AdminStats
             stats={[
-              { label: 'Total Users', value: 241, icon: Users, trend: '+18%' },
-              { label: 'Orders This Month', value: 57, icon: ShoppingBag, trend: '+12%' },
-              { label: 'New Inquiries', value: 23, icon: FileText, trend: '+9%' },
-              { label: 'AI Chats Today', value: 86, icon: Bot, trend: '+31%' },
+              { label: 'Total Users', value: loading ? '…' : data?.users?.total ?? 0, icon: Users },
+              { label: 'Orders This Month', value: loading ? '…' : data?.orders?.this_month ?? 0, icon: ShoppingBag },
+              { label: 'Unread Inquiries', value: loading ? '…' : data?.inquiries?.unread ?? 0, icon: FileText },
+              { label: 'AI Chats', value: loading ? '…' : data?.ai_chats ?? 0, icon: Bot },
             ]}
           />
 
           <div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]">
             <AnalyticsChart
-              title="Signups trend"
-              description="User growth over the last months."
-              data={chartData}
+              title="Platform overview"
+              description="Key platform metrics."
+              data={[
+                { name: 'Users', value: data?.users?.total ?? 0 },
+                { name: 'Orders', value: data?.orders?.total ?? 0 },
+                { name: 'Bookings', value: data?.bookings ?? 0 },
+                { name: 'AI Chats', value: data?.ai_chats ?? 0 },
+              ]}
               dataKey="value"
-              type="line"
+              type="bar"
             />
 
             <section className="rounded-3xl border border-willbry-green-100 bg-white p-6 shadow-card">
-              <h2 className="text-xl font-black text-willbry-green-900">
-                Quick management
-              </h2>
-
+              <h2 className="text-xl font-black text-willbry-green-900">Quick management</h2>
               <div className="mt-6 grid gap-3">
                 {[
                   { label: 'Manage users', href: '/admin/users', icon: Users },

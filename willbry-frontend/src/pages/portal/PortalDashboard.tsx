@@ -1,16 +1,13 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Bot,
-  Download,
-  FileText,
-  Package,
-  Plus,
-  ShoppingBag,
-} from 'lucide-react'
+import { Bot, Download, FileText, Package, Plus, ShoppingBag } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import DashboardStats from '../../components/portal/DashboardStats'
 import OrdersTable from '../../components/portal/OrdersTable'
 import { Button } from '../../components/ui/Button'
+import { getPortalDashboard } from '../../services/portal.service'
+import { listMyOrders } from '../../services/portal.service'
 import type { Order } from '../../types'
 
 const portalItems = [
@@ -21,24 +18,29 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const orders: Order[] = [
-  {
-    id: 'order-1001',
-    user_id: 'user-1',
-    status: 'pending',
-    total: 25000,
-    delivery_address: 'Kabale Municipality',
-    notes: 'Call before delivery',
-    items: [
-      { id: 'i1', product_id: 'p1', product_name: 'SmartCrisps', quantity: 3, unit_price: 5000 },
-      { id: 'i2', product_id: 'p2', product_name: 'SmartFlour', quantity: 1, unit_price: 10000 },
-    ],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
-
 export default function PortalDashboard() {
+  const [stats, setStats] = useState({ total_orders: 0, pending_orders: 0, ai_chats_total: 0, bookings: 0 })
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [dashData, ordersData] = await Promise.all([
+          getPortalDashboard(),
+          listMyOrders(),
+        ])
+        setStats(dashData)
+        setOrders(Array.isArray(ordersData) ? ordersData.slice(0, 5) : [])
+      } catch {
+        toast.error('Failed to load dashboard')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
+
   return (
     <main className="flex min-h-screen bg-willbry-light">
       <div className="hidden lg:block">
@@ -74,10 +76,10 @@ export default function PortalDashboard() {
 
           <DashboardStats
             stats={[
-              { label: 'Total Orders', value: 1, description: 'Orders submitted through the platform', icon: Package, trend: '+1' },
-              { label: 'Open Inquiries', value: 0, description: 'Pending support conversations', icon: FileText },
-              { label: 'AI Chats Today', value: 3, description: 'Questions answered by WillBry AI', icon: Bot, trend: '+3' },
-              { label: 'Resources Downloaded', value: 5, description: 'Guides and manuals accessed', icon: Download },
+              { label: 'Total Orders', value: loading ? '…' : stats.total_orders, description: 'Orders submitted through the platform', icon: Package },
+              { label: 'Pending Orders', value: loading ? '…' : stats.pending_orders, description: 'Orders awaiting confirmation', icon: ShoppingBag },
+              { label: 'AI Chats', value: loading ? '…' : stats.ai_chats_total, description: 'Questions answered by WillBry AI', icon: Bot },
+              { label: 'Bookings', value: loading ? '…' : stats.bookings, description: 'Service bookings submitted', icon: FileText },
             ]}
           />
 
@@ -89,7 +91,11 @@ export default function PortalDashboard() {
                   View all
                 </Link>
               </div>
-              <OrdersTable orders={orders} />
+              {loading ? (
+                <p className="text-sm text-gray-500">Loading orders…</p>
+              ) : (
+                <OrdersTable orders={orders} />
+              )}
             </section>
 
             <aside className="rounded-[2rem] bg-gradient-to-br from-willbry-green-900 to-willbry-green-500 p-8 text-white shadow-card">

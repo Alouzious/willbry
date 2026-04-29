@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bot, Download, FileText, Package, ShoppingBag } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import OrdersTable from '../../components/portal/OrdersTable'
+import { listMyOrders } from '../../services/portal.service'
 import type { Order } from '../../types'
 
 const portalItems = [
@@ -12,25 +14,23 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const fallbackOrders: Order[] = [
-  {
-    id: 'order-1001',
-    user_id: 'user-1',
-    status: 'confirmed',
-    total: 52000,
-    delivery_address: 'Kabale Municipality, Northern Division',
-    notes: 'Deliver in the morning',
-    items: [
-      { id: 'i1', product_id: 'p1', product_name: 'SmartCrisps', quantity: 4, unit_price: 5000 },
-      { id: 'i2', product_id: 'p2', product_name: 'SmartFlour', quantity: 2, unit_price: 16000 },
-    ],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
-
 export default function PortalOrders() {
-  const [orders] = useState<Order[]>(fallbackOrders)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await listMyOrders()
+        setOrders(Array.isArray(data) ? data : [])
+      } catch {
+        toast.error('Failed to load orders')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
 
   return (
     <main className="flex min-h-screen bg-willbry-light">
@@ -52,7 +52,16 @@ export default function PortalOrders() {
             </p>
           </div>
 
-          <OrdersTable orders={orders} />
+          {loading ? (
+            <p className="text-sm text-gray-500">Loading orders…</p>
+          ) : orders.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-willbry-green-200 bg-white p-12 text-center">
+              <p className="font-black text-willbry-green-900">No orders yet.</p>
+              <p className="mt-2 text-sm text-gray-500">Place your first order from the marketplace.</p>
+            </div>
+          ) : (
+            <OrdersTable orders={orders} />
+          )}
         </div>
       </section>
     </main>

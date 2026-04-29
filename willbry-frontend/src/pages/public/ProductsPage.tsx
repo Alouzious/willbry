@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Filter, ShoppingCart, X } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
@@ -8,74 +8,26 @@ import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { useCart } from '../../hooks/useCart'
 import { formatCurrency } from '../../lib/utils'
+import { listProducts } from '../../services/public.service'
 import type { Product, ProductCategory } from '../../types'
 
-const products: Product[] = [
-  {
-    id: 'p1',
-    name: 'SmartCrisps',
-    slug: 'smartcrisps',
-    description:
-      'Premium potato crisps produced through local value addition, supporting farmers and creating market-ready food products.',
-    price: 5000,
-    unit: 'pack',
-    category: 'food',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p2',
-    name: 'SmartFlour',
-    slug: 'smartflour',
-    description:
-      'Fortified flour designed to improve nutrition while strengthening local agricultural value chains.',
-    price: 12000,
-    unit: 'kg',
-    category: 'food',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p3',
-    name: 'Digital Farm Advisory Package',
-    slug: 'digital-farm-advisory',
-    description:
-      'AI-supported advisory and digital record tools for farmers, cooperatives, and agribusiness teams.',
-    category: 'digital',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p4',
-    name: 'Farmer Training Package',
-    slug: 'farmer-training-package',
-    description:
-      'Practical training package covering production, post-harvest handling, value addition, and market readiness.',
-    category: 'training',
-    active: true,
-    created_at: new Date().toISOString(),
-  },
-]
-
 const categories: Array<'all' | ProductCategory> = [
-  'all',
-  'food',
-  'digital',
-  'training',
-  'consultancy',
-  'seeds',
+  'all', 'food', 'digital', 'training', 'consultancy', 'seeds',
 ]
 
 export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([])
   const [active, setActive] = useState<'all' | ProductCategory>('all')
   const [cartOpen, setCartOpen] = useState(false)
   const { items, total, count, removeItem, updateQuantity, clearCart } = useCart()
 
+  useEffect(() => {
+    void listProducts().then((data) => setProducts(Array.isArray(data) ? data : []))
+  }, [])
+
   const filteredProducts = useMemo(() => {
-    return active === 'all'
-      ? products
-      : products.filter((product) => product.category === active)
-  }, [active])
+    return active === 'all' ? products : products.filter((p) => p.category === active)
+  }, [active, products])
 
   return (
     <>
@@ -86,11 +38,7 @@ export default function ProductsPage() {
           title="Value-added products and agricultural solutions."
           description="Explore WillBry products, training packages, and digital agriculture solutions designed for farmers, clients, and institutions."
         >
-          <Button
-            variant="accent"
-            leftIcon={<ShoppingCart size={18} />}
-            onClick={() => setCartOpen(true)}
-          >
+          <Button variant="accent" leftIcon={<ShoppingCart size={18} />} onClick={() => setCartOpen(true)}>
             View Cart ({count})
           </Button>
         </PageBanner>
@@ -141,17 +89,13 @@ export default function ProductsPage() {
               onClick={() => setCartOpen(false)}
               aria-label="Close cart"
             />
-
             <aside className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
               <div className="flex items-center justify-between border-b border-willbry-green-100 px-6 py-5">
                 <div>
                   <h2 className="text-xl font-black text-willbry-green-900">Your Cart</h2>
                   <p className="text-sm text-gray-500">{count} item(s)</p>
                 </div>
-                <button
-                  onClick={() => setCartOpen(false)}
-                  className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                >
+                <button onClick={() => setCartOpen(false)} className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
                   <X size={20} />
                 </button>
               </div>
@@ -160,46 +104,21 @@ export default function ProductsPage() {
                 {items.length ? (
                   <div className="space-y-4">
                     {items.map((item) => (
-                      <div
-                        key={item.product.id}
-                        className="rounded-2xl border border-willbry-green-100 p-4"
-                      >
+                      <div key={item.product.id} className="rounded-2xl border border-willbry-green-100 p-4">
                         <div className="flex justify-between gap-4">
                           <div>
-                            <h3 className="font-black text-willbry-green-900">
-                              {item.product.name}
-                            </h3>
-                            <Badge variant="teal" size="sm">
-                              {item.product.category}
-                            </Badge>
+                            <h3 className="font-black text-willbry-green-900">{item.product.name}</h3>
+                            <Badge variant="teal" size="sm">{item.product.category}</Badge>
                           </div>
-                          <button
-                            onClick={() => removeItem(item.product.id)}
-                            className="text-sm font-bold text-red-600"
-                          >
+                          <button onClick={() => removeItem(item.product.id)} className="text-sm font-bold text-red-600">
                             Remove
                           </button>
                         </div>
-
                         <div className="mt-4 flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() =>
-                                updateQuantity(item.product.id, item.quantity - 1)
-                              }
-                              className="h-8 w-8 rounded-lg border border-willbry-green-100 font-black"
-                            >
-                              -
-                            </button>
+                            <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="h-8 w-8 rounded-lg border border-willbry-green-100 font-black">-</button>
                             <span className="w-8 text-center font-black">{item.quantity}</span>
-                            <button
-                              onClick={() =>
-                                updateQuantity(item.product.id, item.quantity + 1)
-                              }
-                              className="h-8 w-8 rounded-lg border border-willbry-green-100 font-black"
-                            >
-                              +
-                            </button>
+                            <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="h-8 w-8 rounded-lg border border-willbry-green-100 font-black">+</button>
                           </div>
                           <p className="font-black text-willbry-green-900">
                             {formatCurrency((item.product.price ?? 0) * item.quantity)}
@@ -211,12 +130,8 @@ export default function ProductsPage() {
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center text-center">
                     <ShoppingCart className="h-12 w-12 text-willbry-green-300" />
-                    <h3 className="mt-4 text-lg font-black text-willbry-green-900">
-                      Your cart is empty
-                    </h3>
-                    <p className="mt-2 text-sm text-gray-500">
-                      Add products or request a quote to begin.
-                    </p>
+                    <h3 className="mt-4 text-lg font-black text-willbry-green-900">Your cart is empty</h3>
+                    <p className="mt-2 text-sm text-gray-500">Add products or request a quote to begin.</p>
                   </div>
                 )}
               </div>
@@ -224,16 +139,11 @@ export default function ProductsPage() {
               <div className="border-t border-willbry-green-100 p-6">
                 <div className="mb-5 flex items-center justify-between">
                   <span className="font-bold text-gray-600">Total</span>
-                  <span className="text-2xl font-black text-willbry-green-900">
-                    {formatCurrency(total)}
-                  </span>
+                  <span className="text-2xl font-black text-willbry-green-900">{formatCurrency(total)}</span>
                 </div>
-
                 <div className="grid gap-3">
                   <Button disabled={!items.length}>Submit Order Request</Button>
-                  <Button variant="secondary" onClick={clearCart} disabled={!items.length}>
-                    Clear Cart
-                  </Button>
+                  <Button variant="secondary" onClick={clearCart} disabled={!items.length}>Clear Cart</Button>
                 </div>
               </div>
             </aside>

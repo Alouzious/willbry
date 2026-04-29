@@ -15,6 +15,17 @@ struct DayStat {
     count: Option<i64>,
 }
 
+/// [Admin] Get overall dashboard stats
+#[utoipa::path(
+    get,
+    path = "/api/admin/dashboard",
+    tag = "analytics",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Aggregate counts: users, orders, inquiries, content, farmers, AI chats, bookings"),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_dashboard(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -60,6 +71,17 @@ pub async fn admin_dashboard(
     })))
 }
 
+/// [Admin] Get time-series analytics for the last 30 days
+#[utoipa::path(
+    get,
+    path = "/api/admin/analytics",
+    tag = "analytics",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Daily signups and orders for the past 30 days"),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn analytics_data(
     State(state): State<AppState>,
     _admin: AdminUser,

@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BarChart3, Bot, Edit3, FileText, Image, Package, Plus, Settings, ShoppingBag, Trash2, Users } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { formatDate } from '../../lib/utils'
+import { adminListPosts, deletePost } from '../../services/admin.service'
 import type { BlogPost } from '../../types'
 
 const adminItems = [
@@ -17,23 +20,31 @@ const adminItems = [
   { label: 'Analytics', href: '/admin/analytics', icon: Settings },
 ]
 
-const posts: BlogPost[] = [
-  {
-    id: 'b1',
-    title: 'Digital Farming Tools for Better Agricultural Decisions',
-    slug: 'digital-farming-tools-better-decisions',
-    content: 'Digital farming improves farmer decision-making.',
-    excerpt: 'How digital systems support farmers.',
-    author_id: '1',
-    author_name: 'WillBry Team',
-    category: 'agri_tech',
-    published: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
-
 export default function AdminBlog() {
+  const [posts, setPosts] = useState<BlogPost[]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await adminListPosts()
+        setPosts(Array.isArray(data) ? data : [])
+      } catch {
+        toast.error('Failed to load posts')
+      }
+    }
+    void load()
+  }, [])
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deletePost(id)
+      setPosts((prev) => prev.filter((p) => p.id !== id))
+      toast.success('Post deleted')
+    } catch {
+      toast.error('Failed to delete post')
+    }
+  }
+
   return (
     <main className="flex min-h-screen bg-willbry-light">
       <div className="hidden lg:block">
@@ -54,7 +65,6 @@ export default function AdminBlog() {
                 Publish farming tips, company news, market trends, and agri-tech updates.
               </p>
             </div>
-
             <Link to="/admin/blog/new">
               <Button leftIcon={<Plus size={16} />}>New Post</Button>
             </Link>
@@ -65,16 +75,12 @@ export default function AdminBlog() {
               <thead className="bg-willbry-light">
                 <tr>
                   {['Title', 'Category', 'Status', 'Date', 'Actions'].map((head) => (
-                    <th
-                      key={head}
-                      className="px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-willbry-green-700"
-                    >
+                    <th key={head} className="px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-willbry-green-700">
                       {head}
                     </th>
                   ))}
                 </tr>
               </thead>
-
               <tbody className="divide-y divide-willbry-green-100">
                 {posts.map((post) => (
                   <tr key={post.id} className="hover:bg-willbry-light">
@@ -100,7 +106,12 @@ export default function AdminBlog() {
                             Edit
                           </Button>
                         </Link>
-                        <Button size="sm" variant="danger" leftIcon={<Trash2 size={15} />}>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          leftIcon={<Trash2 size={15} />}
+                          onClick={() => handleDelete(post.id)}
+                        >
                           Delete
                         </Button>
                       </div>

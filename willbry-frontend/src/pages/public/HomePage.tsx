@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -19,6 +20,26 @@ import ProductCard from '../../components/public/ProductCard'
 import BlogCard from '../../components/public/BlogCard'
 import { Button } from '../../components/ui/Button'
 import type { Product, BlogPost } from '../../types'
+
+// Aerial / drone-style wide farm shots — clear, landscape, professional
+const heroImages = [
+  {
+    url: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=2070&q=90',
+    position: 'center 60%',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=2070&q=90',
+    position: 'center center',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=2070&q=90',
+    position: 'center 40%',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1560493676-04071c5f467b?auto=format&fit=crop&w=2070&q=90',
+    position: 'center center',
+  },
+]
 
 const services = [
   { title: 'Agricultural Innovation', icon: Sprout, text: 'Climate-smart farming methods, field trials, and farmer-centered innovation.' },
@@ -97,16 +118,94 @@ const posts: BlogPost[] = [
 ]
 
 export default function HomePage() {
+  const [current, setCurrent] = useState(0)
+  const [key, setKey] = useState(0) // re-mounts active slide to restart Ken Burns
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % heroImages.length)
+      setKey((prev) => prev + 1)
+    }, 6500)
+    return () => clearInterval(timer)
+  }, [])
+
   return (
     <>
+      <style>{`
+        @keyframes kenburns {
+          0%   { transform: scale(1)    translate(0%, 0%);    }
+          100% { transform: scale(1.09) translate(-1.5%, -1%); }
+        }
+        .slide-kb {
+          animation: kenburns 7s ease-out forwards;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          will-change: transform;
+        }
+      `}</style>
+
       <Navbar />
 
       <main>
-        <section className="relative min-h-screen overflow-hidden bg-willbry-green-900 pt-28 text-white">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(82,183,136,0.35),transparent_30%),radial-gradient(circle_at_80%_30%,rgba(231,111,81,0.18),transparent_28%),linear-gradient(135deg,#0d2b18,#2d6a4f)]" />
-          <div className="absolute inset-0 opacity-10 [background-image:linear-gradient(rgba(255,255,255,.2)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.2)_1px,transparent_1px)] [background-size:60px_60px]" />
+        {/* ── HERO ── */}
+        <section className="relative min-h-screen overflow-hidden pt-28 text-white">
 
-          <div className="relative mx-auto grid min-h-[calc(100vh-7rem)] max-w-7xl items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
+          {/* ── Crossfade slides with Ken Burns on active ── */}
+          {heroImages.map(({ url, position }, i) => (
+            <div
+              key={url}
+              className="absolute inset-0 transition-opacity duration-[2200ms] ease-in-out"
+              style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
+            >
+              {/* Only the active slide gets the KB class; key forces restart on each transition */}
+              <div
+                key={i === current ? key : i}
+                className={i === current ? 'slide-kb' : ''}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  backgroundImage: `url(${url})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: position,
+                }}
+              />
+            </div>
+          ))}
+
+          {/* ── Overlay — reduced darkness so images look vivid and clear ── */}
+          <div
+            className="absolute inset-0"
+            style={{
+              zIndex: 2,
+              background:
+                'linear-gradient(135deg, rgba(10,36,20,0.68) 0%, rgba(30,80,55,0.48) 55%, rgba(10,36,20,0.40) 100%)',
+            }}
+          />
+
+          {/* Subtle teal/amber accent glows (original) */}
+          <div
+            className="absolute inset-0"
+            style={{
+              zIndex: 3,
+              background:
+                'radial-gradient(circle at 18% 22%, rgba(82,183,136,0.16) 0%, transparent 28%), radial-gradient(circle at 80% 28%, rgba(231,111,81,0.09) 0%, transparent 26%)',
+            }}
+          />
+
+          {/* Fine grid texture (original, very subtle) */}
+          <div
+            className="absolute inset-0 opacity-[0.05]"
+            style={{
+              zIndex: 4,
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)',
+              backgroundSize: '60px 60px',
+            }}
+          />
+
+          {/* ── Original content — zero changes ── */}
+          <div className="relative mx-auto grid min-h-[calc(100vh-7rem)] max-w-7xl items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8" style={{ zIndex: 5 }}>
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-willbry-teal backdrop-blur">
                 <Leaf size={15} />
@@ -166,7 +265,23 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+
+          {/* Dot indicators */}
+          <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 gap-2" style={{ zIndex: 6 }}>
+            {heroImages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setCurrent(i); setKey((p) => p + 1) }}
+                className={[
+                  'h-2 rounded-full transition-all duration-500',
+                  i === current ? 'w-8 bg-willbry-teal' : 'w-2 bg-white/35 hover:bg-white/65',
+                ].join(' ')}
+              />
+            ))}
+          </div>
         </section>
+
+        {/* ── Everything below untouched ── */}
 
         <section className="bg-white py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

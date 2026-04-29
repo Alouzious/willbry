@@ -10,6 +10,17 @@ use crate::{
     services::email::{send_email, inquiry_notification_html},
 };
 
+/// Submit a contact / inquiry form
+#[utoipa::path(
+    post,
+    path = "/api/inquiries",
+    tag = "inquiry",
+    request_body = CreateInquiryRequest,
+    responses(
+        (status = 200, description = "Inquiry received. Admin is notified by email.", body = Inquiry),
+        (status = 400, description = "Name and email are required"),
+    )
+)]
 pub async fn submit_inquiry(
     State(state): State<AppState>,
     Json(body): Json<CreateInquiryRequest>,
@@ -45,6 +56,17 @@ pub async fn submit_inquiry(
     })))
 }
 
+/// [Admin] List all inquiries
+#[utoipa::path(
+    get,
+    path = "/api/admin/inquiries",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All inquiries", body = Vec<Inquiry>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn list_inquiries(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -58,6 +80,21 @@ pub async fn list_inquiries(
     Ok(Json(json!({ "success": true, "data": inquiries })))
 }
 
+/// [Admin] Mark an inquiry as read or replied
+#[utoipa::path(
+    patch,
+    path = "/api/admin/inquiries/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Inquiry UUID")
+    ),
+    request_body = UpdateInquiryRequest,
+    responses(
+        (status = 200, description = "Inquiry updated", body = Inquiry),
+        (status = 404, description = "Inquiry not found"),
+    )
+)]
 pub async fn mark_read(
     State(state): State<AppState>,
     _admin: AdminUser,

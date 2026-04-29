@@ -1,86 +1,45 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import PageBanner from '../../components/layout/PageBanner'
 import BlogCard from '../../components/public/BlogCard'
 import { Input } from '../../components/ui/Input'
+import { listPosts } from '../../services/public.service'
 import type { BlogCategory, BlogPost } from '../../types'
 
-const posts: BlogPost[] = [
-  {
-    id: 'b1',
-    title: 'Digital Farming Tools for Better Agricultural Decisions',
-    slug: 'digital-farming-tools-better-decisions',
-    content:
-      'Digital tools help farmers access timely guidance, improve planning, and reduce avoidable losses.',
-    excerpt:
-      'How farmer-centered digital systems can improve decisions in Uganda’s agricultural sector.',
-    author_id: '1',
-    author_name: 'WillBry Team',
-    category: 'agri_tech',
-    published: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'b2',
-    title: 'Why Value Addition Matters for Rural Growth',
-    slug: 'why-value-addition-matters',
-    content:
-      'Value addition enables farmers and agribusinesses to move beyond raw produce and capture better margins.',
-    excerpt:
-      'From potatoes to processed foods, value addition can transform rural income opportunities.',
-    author_id: '1',
-    author_name: 'WillBry Team',
-    category: 'market_trends',
-    published: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'b3',
-    title: 'Climate-Smart Agriculture in the Kigezi Highlands',
-    slug: 'climate-smart-agriculture-kigezi-highlands',
-    content:
-      'Climate-smart farming requires local knowledge, practical tools, and farmer training.',
-    excerpt:
-      'Practical insights for resilient farming in Kabale and surrounding districts.',
-    author_id: '1',
-    author_name: 'WillBry Team',
-    category: 'farming_tips',
-    published: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
-
 const categories: Array<'all' | BlogCategory> = [
-  'all',
-  'farming_tips',
-  'company_news',
-  'agri_tech',
-  'market_trends',
+  'all', 'farming_tips', 'company_news', 'agri_tech', 'market_trends',
 ]
 
 export default function BlogPage() {
+  const [posts, setPosts] = useState<BlogPost[]>([])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<'all' | BlogCategory>('all')
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await listPosts({ per_page: 50 })
+        setPosts(Array.isArray(res.data) ? res.data : [])
+      } catch {
+        setPosts([])
+      }
+    }
+    void load()
+  }, [])
+
   const filteredPosts = useMemo(() => {
     const search = query.toLowerCase()
-
     return posts.filter((post) => {
       const matchesSearch =
         post.title.toLowerCase().includes(search) ||
         post.excerpt?.toLowerCase().includes(search) ||
         post.content.toLowerCase().includes(search)
-
       const matchesCategory = category === 'all' || post.category === category
-
       return matchesSearch && matchesCategory
     })
-  }, [query, category])
+  }, [query, category, posts])
 
   return (
     <>
@@ -98,10 +57,9 @@ export default function BlogPage() {
               <Input
                 placeholder="Search articles..."
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(e) => setQuery(e.target.value)}
                 leftIcon={<Search size={17} />}
               />
-
               <div className="flex flex-wrap gap-2">
                 {categories.map((item) => (
                   <button

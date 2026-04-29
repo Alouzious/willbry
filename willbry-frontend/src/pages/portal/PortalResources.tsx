@@ -1,9 +1,10 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Bot, Download, FileText, Package, Search, ShoppingBag } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import ResourceCard from '../../components/portal/ResourceCard'
-import type { ResourceItem } from '../../components/portal/ResourceCard'
 import { Input } from '../../components/ui/Input'
+import { listResources, getDownloadUrl } from '../../services/portal.service'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -13,42 +14,40 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const resources: ResourceItem[] = [
-  {
-    id: 'r1',
-    title: 'Irish Potato Production Guide',
-    description: 'A practical guide for better potato production in highland conditions.',
-    category: 'Crop Guides',
-    download_count: 124,
-  },
-  {
-    id: 'r2',
-    title: 'Post-Harvest Handling Manual',
-    description: 'Guidance for reducing losses after harvest and improving market quality.',
-    category: 'Training',
-    download_count: 89,
-  },
-  {
-    id: 'r3',
-    title: 'Value Addition Starter Checklist',
-    description: 'A simple checklist for turning raw produce into market-ready products.',
-    category: 'Business',
-    download_count: 57,
-  },
-]
-
 export default function PortalResources() {
+  const [resources, setResources] = useState<any[]>([])
   const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await listResources()
+        setResources(Array.isArray(data) ? data : [])
+      } catch {
+        toast.error('Failed to load resources')
+      }
+    }
+    void load()
+  }, [])
+
+  const handleDownload = async (id: string) => {
+    try {
+      const url = await getDownloadUrl(id)
+      window.open(url, '_blank')
+    } catch {
+      toast.error('Could not get download link')
+    }
+  }
 
   const filtered = useMemo(() => {
     const search = query.toLowerCase()
     return resources.filter(
-      (resource) =>
-        resource.title.toLowerCase().includes(search) ||
-        resource.description?.toLowerCase().includes(search) ||
-        resource.category.toLowerCase().includes(search)
+      (r) =>
+        r.title.toLowerCase().includes(search) ||
+        r.description?.toLowerCase().includes(search) ||
+        r.category.toLowerCase().includes(search)
     )
-  }, [query])
+  }, [query, resources])
 
   return (
     <main className="flex min-h-screen bg-willbry-light">
@@ -71,7 +70,6 @@ export default function PortalResources() {
                 value addition, and agribusiness growth.
               </p>
             </div>
-
             <Input
               placeholder="Search resources..."
               value={query}
@@ -82,7 +80,9 @@ export default function PortalResources() {
 
           <div className="grid gap-5 lg:grid-cols-3">
             {filtered.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
+              <div key={resource.id} onClick={() => handleDownload(resource.id)} className="cursor-pointer">
+                <ResourceCard resource={resource} />
+              </div>
             ))}
           </div>
 

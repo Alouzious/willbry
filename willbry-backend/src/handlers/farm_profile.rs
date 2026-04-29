@@ -9,6 +9,17 @@ use crate::{
     models::farm_profile::{FarmProfile, UpsertFarmProfileRequest, CropLog, CreateCropLogRequest},
 };
 
+/// [Portal] Get the authenticated user's farm profile
+#[utoipa::path(
+    get,
+    path = "/api/portal/farm-profile",
+    tag = "farm_profile",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Farm profile (null if none created yet)", body = FarmProfile),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn get_farm_profile(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -23,6 +34,18 @@ pub async fn get_farm_profile(
     Ok(Json(json!({ "success": true, "data": profile })))
 }
 
+/// [Portal] Create or update the authenticated user's farm profile
+#[utoipa::path(
+    put,
+    path = "/api/portal/farm-profile",
+    tag = "farm_profile",
+    security(("bearer_auth" = [])),
+    request_body = UpsertFarmProfileRequest,
+    responses(
+        (status = 200, description = "Farm profile saved", body = FarmProfile),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn upsert_farm_profile(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -51,6 +74,17 @@ pub async fn upsert_farm_profile(
     Ok(Json(json!({ "success": true, "data": profile })))
 }
 
+/// [Portal] List crop logs for the authenticated user's farm
+#[utoipa::path(
+    get,
+    path = "/api/portal/crop-logs",
+    tag = "farm_profile",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Crop logs for this user's farm", body = Vec<CropLog>),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn list_crop_logs(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -68,6 +102,18 @@ pub async fn list_crop_logs(
     Ok(Json(json!({ "success": true, "data": logs })))
 }
 
+/// [Portal] Add a crop log entry (auto-creates farm profile if needed)
+#[utoipa::path(
+    post,
+    path = "/api/portal/crop-logs",
+    tag = "farm_profile",
+    security(("bearer_auth" = [])),
+    request_body = CreateCropLogRequest,
+    responses(
+        (status = 200, description = "Crop log created", body = CropLog),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn create_crop_log(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -83,7 +129,6 @@ pub async fn create_crop_log(
     let profile_id = match profile {
         Some(id) => id,
         None => {
-            // Auto-create empty profile
             let id = Uuid::new_v4();
             sqlx::query(
                 "INSERT INTO farm_profiles (id, user_id, district, crops) VALUES ($1, $2, 'Unknown', '')"

@@ -1,10 +1,12 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Bot, Download, FileText, Package, ShoppingBag, Truck } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import { Badge, orderStatusVariant } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { formatCurrency, formatDate } from '../../lib/utils'
-import type { Order } from '../../types'
+import { getOrder } from '../../services/portal.service'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -14,23 +16,28 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const order: Order = {
-  id: 'order-1001',
-  user_id: 'user-1',
-  status: 'confirmed',
-  total: 52000,
-  delivery_address: 'Kabale Municipality, Northern Division',
-  notes: 'Deliver in the morning',
-  items: [
-    { id: 'i1', product_id: 'p1', product_name: 'SmartCrisps', quantity: 4, unit_price: 5000 },
-    { id: 'i2', product_id: 'p2', product_name: 'SmartFlour', quantity: 2, unit_price: 16000 },
-  ],
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-}
-
 export default function PortalOrderDetail() {
-  const { id } = useParams()
+  const { id } = useParams<{ id: string }>()
+  const [order, setOrder] = useState<{ order: any; items: any[] } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!id) return
+    const load = async () => {
+      try {
+        const data = await getOrder(id)
+        setOrder(data)
+      } catch {
+        toast.error('Failed to load order')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [id])
+
+  const o = order?.order
+  const items = order?.items ?? []
 
   return (
     <main className="flex min-h-screen bg-willbry-light">
@@ -46,73 +53,71 @@ export default function PortalOrderDetail() {
             </Button>
           </Link>
 
-          <div className="mt-8 rounded-[2rem] bg-white p-6 shadow-card sm:p-8">
-            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-willbry-teal">
-                  Order detail
-                </p>
-                <h1 className="mt-3 text-3xl font-black text-willbry-green-900">
-                  #{id || order.id}
-                </h1>
-                <p className="mt-2 text-sm text-gray-500">
-                  Created {formatDate(order.created_at)}
-                </p>
+          {loading ? (
+            <p className="mt-8 text-sm text-gray-500">Loading order…</p>
+          ) : !o ? (
+            <p className="mt-8 text-sm text-gray-500">Order not found.</p>
+          ) : (
+            <div className="mt-8 rounded-[2rem] bg-white p-6 shadow-card sm:p-8">
+              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-willbry-teal">
+                    Order detail
+                  </p>
+                  <h1 className="mt-3 text-3xl font-black text-willbry-green-900">#{o.id}</h1>
+                  <p className="mt-2 text-sm text-gray-500">Created {formatDate(o.created_at)}</p>
+                </div>
+                <Badge variant={orderStatusVariant(o.status)} dot>{o.status}</Badge>
               </div>
 
-              <Badge variant={orderStatusVariant(order.status)} dot>
-                {order.status}
-              </Badge>
-            </div>
-
-            <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_.7fr]">
-              <div>
-                <h2 className="text-xl font-black text-willbry-green-900">Items</h2>
-
-                <div className="mt-4 space-y-3">
-                  {order.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between rounded-2xl border border-willbry-green-100 p-4"
-                    >
-                      <div>
-                        <p className="font-black text-willbry-green-900">{item.product_name}</p>
-                        <p className="text-sm text-gray-500">
-                          Qty {item.quantity} × {formatCurrency(item.unit_price)}
+              <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_.7fr]">
+                <div>
+                  <h2 className="text-xl font-black text-willbry-green-900">Items</h2>
+                  <div className="mt-4 space-y-3">
+                    {items.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between rounded-2xl border border-willbry-green-100 p-4"
+                      >
+                        <div>
+                          <p className="font-black text-willbry-green-900">
+                            {item.product_name ?? item.product_id}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Qty {item.quantity} × {formatCurrency(item.unit_price)}
+                          </p>
+                        </div>
+                        <p className="font-black text-willbry-green-900">
+                          {formatCurrency(item.quantity * item.unit_price)}
                         </p>
                       </div>
-                      <p className="font-black text-willbry-green-900">
-                        {formatCurrency(item.quantity * item.unit_price)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <aside className="rounded-3xl bg-willbry-light p-6">
-                <Truck className="h-8 w-8 text-willbry-green-600" />
-                <h3 className="mt-5 text-xl font-black text-willbry-green-900">
-                  Delivery information
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-gray-600">{order.delivery_address}</p>
-
-                {order.notes && (
-                  <p className="mt-3 rounded-2xl bg-white p-4 text-sm leading-6 text-gray-600">
-                    {order.notes}
-                  </p>
-                )}
-
-                <div className="mt-6 border-t border-willbry-green-100 pt-6">
-                  <div className="flex justify-between">
-                    <span className="font-bold text-gray-600">Total</span>
-                    <span className="text-2xl font-black text-willbry-green-900">
-                      {formatCurrency(order.total)}
-                    </span>
+                    ))}
                   </div>
                 </div>
-              </aside>
+
+                <aside className="rounded-3xl bg-willbry-light p-6">
+                  <Truck className="h-8 w-8 text-willbry-green-600" />
+                  <h3 className="mt-5 text-xl font-black text-willbry-green-900">
+                    Delivery information
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-gray-600">{o.delivery_address}</p>
+                  {o.notes && (
+                    <p className="mt-3 rounded-2xl bg-white p-4 text-sm leading-6 text-gray-600">
+                      {o.notes}
+                    </p>
+                  )}
+                  <div className="mt-6 border-t border-willbry-green-100 pt-6">
+                    <div className="flex justify-between">
+                      <span className="font-bold text-gray-600">Total</span>
+                      <span className="text-2xl font-black text-willbry-green-900">
+                        {formatCurrency(o.total)}
+                      </span>
+                    </div>
+                  </div>
+                </aside>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </main>

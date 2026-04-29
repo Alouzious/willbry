@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct Inquiry {
     pub id: Uuid,
     pub name: String,
@@ -15,7 +16,7 @@ pub struct Inquiry {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateInquiryRequest {
     pub name: String,
     pub email: String,
@@ -23,7 +24,7 @@ pub struct CreateInquiryRequest {
     pub message: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateInquiryRequest {
     pub read: Option<bool>,
     pub replied: Option<bool>,

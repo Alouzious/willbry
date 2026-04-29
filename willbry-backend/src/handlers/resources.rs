@@ -9,6 +9,17 @@ use crate::{
     models::resource::{Resource, CreateResourceRequest},
 };
 
+/// [Portal] List downloadable resources
+#[utoipa::path(
+    get,
+    path = "/api/portal/resources",
+    tag = "resources",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Active resources available for download", body = Vec<Resource>),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn list_resources(
     State(state): State<AppState>,
     _auth: AuthUser,
@@ -22,6 +33,20 @@ pub async fn list_resources(
     Ok(Json(json!({ "success": true, "data": resources })))
 }
 
+/// [Portal] Get a resource download URL (increments download counter)
+#[utoipa::path(
+    get,
+    path = "/api/portal/resources/{id}/download",
+    tag = "resources",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Resource UUID")
+    ),
+    responses(
+        (status = 200, description = "Download URL returned"),
+        (status = 404, description = "Resource not found"),
+    )
+)]
 pub async fn get_download_url(
     State(state): State<AppState>,
     _auth: AuthUser,
@@ -47,6 +72,17 @@ pub async fn get_download_url(
     })))
 }
 
+/// [Admin] List all resources including inactive
+#[utoipa::path(
+    get,
+    path = "/api/admin/resources",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All resources", body = Vec<Resource>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_list_resources(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -60,6 +96,18 @@ pub async fn admin_list_resources(
     Ok(Json(json!({ "success": true, "data": resources })))
 }
 
+/// [Admin] Upload / register a new resource
+#[utoipa::path(
+    post,
+    path = "/api/admin/resources",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    request_body = CreateResourceRequest,
+    responses(
+        (status = 200, description = "Resource created", body = Resource),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn upload_resource(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -79,6 +127,20 @@ pub async fn upload_resource(
     Ok(Json(json!({ "success": true, "data": resource })))
 }
 
+/// [Admin] Soft-delete a resource
+#[utoipa::path(
+    delete,
+    path = "/api/admin/resources/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Resource UUID")
+    ),
+    responses(
+        (status = 200, description = "Resource deleted"),
+        (status = 404, description = "Resource not found"),
+    )
+)]
 pub async fn delete_resource(
     State(state): State<AppState>,
     _admin: AdminUser,

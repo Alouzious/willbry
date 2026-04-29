@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 use chrono::{DateTime, Utc, NaiveDate};
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct FarmProfile {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -15,7 +16,7 @@ pub struct FarmProfile {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpsertFarmProfileRequest {
     pub district: String,
     pub size_acres: Option<f64>,
@@ -23,7 +24,7 @@ pub struct UpsertFarmProfileRequest {
     pub irrigation: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct CropLog {
     pub id: Uuid,
     pub farm_profile_id: Uuid,
@@ -36,7 +37,7 @@ pub struct CropLog {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateCropLogRequest {
     pub crop: String,
     pub planted_date: Option<NaiveDate>,

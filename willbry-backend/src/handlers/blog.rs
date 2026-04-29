@@ -9,6 +9,21 @@ use crate::{
     models::blog::{BlogPost, CreatePostRequest, UpdatePostRequest, BlogQuery},
 };
 
+/// List published blog posts (paginated)
+#[utoipa::path(
+    get,
+    path = "/api/blog",
+    tag = "blog",
+    params(
+        ("page" = Option<i64>, Query, description = "Page number (default 1)"),
+        ("per_page" = Option<i64>, Query, description = "Items per page (default 10, max 50)"),
+        ("category" = Option<String>, Query, description = "Filter by category"),
+        ("search" = Option<String>, Query, description = "Search term"),
+    ),
+    responses(
+        (status = 200, description = "Paginated list of published posts", body = Vec<BlogPost>),
+    )
+)]
 pub async fn list_posts(
     State(state): State<AppState>,
     Query(q): Query<BlogQuery>,
@@ -36,6 +51,19 @@ pub async fn list_posts(
     })))
 }
 
+/// Get a single published blog post by slug
+#[utoipa::path(
+    get,
+    path = "/api/blog/{slug}",
+    tag = "blog",
+    params(
+        ("slug" = String, Path, description = "Blog post slug")
+    ),
+    responses(
+        (status = 200, description = "Blog post details", body = BlogPost),
+        (status = 404, description = "Post not found"),
+    )
+)]
 pub async fn get_post(
     State(state): State<AppState>,
     Path(slug): Path<String>,
@@ -56,6 +84,17 @@ pub async fn get_post(
     Ok(Json(json!({ "success": true, "data": post })))
 }
 
+/// [Admin] List all blog posts including drafts
+#[utoipa::path(
+    get,
+    path = "/api/admin/blog",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All blog posts", body = Vec<BlogPost>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_list_posts(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -69,6 +108,18 @@ pub async fn admin_list_posts(
     Ok(Json(json!({ "success": true, "data": posts })))
 }
 
+/// [Admin] Create a new blog post
+#[utoipa::path(
+    post,
+    path = "/api/admin/blog",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    request_body = CreatePostRequest,
+    responses(
+        (status = 200, description = "Post created", body = BlogPost),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn create_post(
     State(state): State<AppState>,
     admin: AdminUser,
@@ -93,6 +144,21 @@ pub async fn create_post(
     Ok(Json(json!({ "success": true, "data": post })))
 }
 
+/// [Admin] Update a blog post by ID
+#[utoipa::path(
+    put,
+    path = "/api/admin/blog/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Blog post UUID")
+    ),
+    request_body = UpdatePostRequest,
+    responses(
+        (status = 200, description = "Post updated", body = BlogPost),
+        (status = 404, description = "Post not found"),
+    )
+)]
 pub async fn update_post(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -126,6 +192,20 @@ pub async fn update_post(
     Ok(Json(json!({ "success": true, "data": post })))
 }
 
+/// [Admin] Delete a blog post by ID
+#[utoipa::path(
+    delete,
+    path = "/api/admin/blog/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Blog post UUID")
+    ),
+    responses(
+        (status = 200, description = "Post deleted"),
+        (status = 404, description = "Post not found"),
+    )
+)]
 pub async fn delete_post(
     State(state): State<AppState>,
     _admin: AdminUser,

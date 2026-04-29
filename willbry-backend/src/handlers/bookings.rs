@@ -9,6 +9,18 @@ use crate::{
     models::booking::{Booking, CreateBookingRequest, AdminUpdateBookingRequest},
 };
 
+/// [Portal] Submit a service booking request
+#[utoipa::path(
+    post,
+    path = "/api/portal/bookings",
+    tag = "bookings",
+    security(("bearer_auth" = [])),
+    request_body = CreateBookingRequest,
+    responses(
+        (status = 200, description = "Booking submitted successfully", body = Booking),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn create_booking(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -29,6 +41,17 @@ pub async fn create_booking(
     Ok(Json(json!({ "success": true, "data": booking, "message": "Booking submitted successfully" })))
 }
 
+/// [Portal] List my bookings
+#[utoipa::path(
+    get,
+    path = "/api/portal/bookings",
+    tag = "bookings",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Bookings for the authenticated user", body = Vec<Booking>),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn list_my_bookings(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -43,6 +66,17 @@ pub async fn list_my_bookings(
     Ok(Json(json!({ "success": true, "data": bookings })))
 }
 
+/// [Admin] List all bookings
+#[utoipa::path(
+    get,
+    path = "/api/admin/bookings",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All bookings", body = Vec<Booking>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_list_bookings(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -56,6 +90,21 @@ pub async fn admin_list_bookings(
     Ok(Json(json!({ "success": true, "data": bookings })))
 }
 
+/// [Admin] Update booking status or notes
+#[utoipa::path(
+    patch,
+    path = "/api/admin/bookings/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Booking UUID")
+    ),
+    request_body = AdminUpdateBookingRequest,
+    responses(
+        (status = 200, description = "Booking updated", body = Booking),
+        (status = 404, description = "Booking not found"),
+    )
+)]
 pub async fn admin_update_booking(
     State(state): State<AppState>,
     _admin: AdminUser,

@@ -1,18 +1,10 @@
-import { useState } from 'react'
-import {
-  BarChart3,
-  Bot,
-  FileText,
-  Image,
-  Package,
-  Settings,
-  ShoppingBag,
-  Users,
-} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BarChart3, Bot, FileText, Image, Package, Settings, ShoppingBag, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import AiConfig from '../../components/admin/AiConfig'
 import type { AiConfigValue } from '../../components/admin/AiConfig'
+import { getAiConfig, updateAiConfig } from '../../services/admin.service'
 
 const adminItems = [
   { label: 'Dashboard', href: '/admin', icon: BarChart3 },
@@ -25,25 +17,40 @@ const adminItems = [
   { label: 'Analytics', href: '/admin/analytics', icon: Settings },
 ]
 
-const defaultConfig: AiConfigValue = {
+const fallback: AiConfigValue = {
   model: 'llama-3.3-70b-versatile',
-  language: 'English',
+  language: 'english',
   system_prompt:
     'You are WillBry AI, a practical agricultural assistant for Ugandan farmers. Give clear, safe, locally relevant advice on crops, pests, soils, post-harvest handling, value addition, and agribusiness. Keep answers simple, actionable, and farmer-friendly.',
 }
 
 export default function AdminAiConfig() {
   const [loading, setLoading] = useState(false)
-  const [config, setConfig] = useState(defaultConfig)
+  const [config, setConfig] = useState<AiConfigValue>(fallback)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getAiConfig()
+        if (data) setConfig(data)
+      } catch {
+        // use fallback
+      }
+    }
+    void load()
+  }, [])
 
   const saveConfig = async (value: AiConfigValue) => {
     setLoading(true)
-
-    setTimeout(() => {
-      setConfig(value)
+    try {
+      const updated = await updateAiConfig(value)
+      setConfig(updated ?? value)
       toast.success('AI configuration saved')
+    } catch {
+      toast.error('Failed to save configuration')
+    } finally {
       setLoading(false)
-    }, 600)
+    }
   }
 
   return (

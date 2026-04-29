@@ -12,6 +12,18 @@ use crate::{
     services::email::{send_email, welcome_email_html, password_reset_html},
 };
 
+/// Register a new user
+#[utoipa::path(
+    post,
+    path = "/api/auth/register",
+    tag = "auth",
+    request_body = RegisterRequest,
+    responses(
+        (status = 200, description = "Registration successful. Returns access_token and user."),
+        (status = 400, description = "Validation error (email/password missing or too short)"),
+        (status = 409, description = "Email already registered"),
+    )
+)]
 pub async fn register(
     State(state): State<AppState>,
     Json(body): Json<RegisterRequest>,
@@ -62,7 +74,6 @@ pub async fn register(
         state.config.jwt_access_expiry,
     )?;
 
-    // Send welcome email (non-blocking)
     let email_html = welcome_email_html(&user.full_name);
     let _ = send_email(
         &state.config.resend_api_key,
@@ -80,6 +91,17 @@ pub async fn register(
     })))
 }
 
+/// Login with email and password
+#[utoipa::path(
+    post,
+    path = "/api/auth/login",
+    tag = "auth",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, description = "Login successful. Returns access_token, refresh_token and user."),
+        (status = 401, description = "Invalid email or password"),
+    )
+)]
 pub async fn login(
     State(state): State<AppState>,
     Json(body): Json<LoginRequest>,
@@ -109,7 +131,6 @@ pub async fn login(
         &state.config.jwt_secret, state.config.jwt_refresh_expiry,
     )?;
 
-    // Store refresh token
     sqlx::query("INSERT INTO refresh_tokens (id, user_id, token) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
         .bind(Uuid::new_v4())
         .bind(user.id)
@@ -138,6 +159,17 @@ pub async fn login(
     })))
 }
 
+/// Refresh access token using a refresh token
+#[utoipa::path(
+    post,
+    path = "/api/auth/refresh",
+    tag = "auth",
+    request_body = RefreshRequest,
+    responses(
+        (status = 200, description = "New access_token returned"),
+        (status = 401, description = "Invalid or expired refresh token"),
+    )
+)]
 pub async fn refresh_token(
     State(state): State<AppState>,
     Json(body): Json<RefreshRequest>,
@@ -169,6 +201,16 @@ pub async fn refresh_token(
     })))
 }
 
+/// Logout — invalidates the refresh token
+#[utoipa::path(
+    post,
+    path = "/api/auth/logout",
+    tag = "auth",
+    request_body = RefreshRequest,
+    responses(
+        (status = 200, description = "Logged out successfully"),
+    )
+)]
 pub async fn logout(
     State(state): State<AppState>,
     Json(body): Json<RefreshRequest>,
@@ -181,6 +223,16 @@ pub async fn logout(
     Ok(Json(json!({ "success": true, "message": "Logged out successfully" })))
 }
 
+/// Request a password reset email
+#[utoipa::path(
+    post,
+    path = "/api/auth/forgot-password",
+    tag = "auth",
+    request_body = ForgotPasswordRequest,
+    responses(
+        (status = 200, description = "Reset link sent if the email exists (always 200 for security)"),
+    )
+)]
 pub async fn forgot_password(
     State(state): State<AppState>,
     Json(body): Json<ForgotPasswordRequest>,
@@ -192,7 +244,6 @@ pub async fn forgot_password(
     .fetch_optional(&state.db)
     .await?;
 
-    // Always return success (security: don't reveal if email exists)
     if let Some(user) = user {
         let token = Uuid::new_v4().to_string();
         sqlx::query(
@@ -222,6 +273,17 @@ pub async fn forgot_password(
     })))
 }
 
+/// Reset password using the token received by email
+#[utoipa::path(
+    post,
+    path = "/api/auth/reset-password",
+    tag = "auth",
+    request_body = ResetPasswordRequest,
+    responses(
+        (status = 200, description = "Password updated successfully"),
+        (status = 400, description = "Invalid or expired token, or password too short"),
+    )
+)]
 pub async fn reset_password(
     State(state): State<AppState>,
     Json(body): Json<ResetPasswordRequest>,

@@ -9,6 +9,19 @@ use crate::{
     models::order::{Order, OrderItem, PlaceOrderRequest, AdminUpdateOrderRequest},
 };
 
+/// [Portal] Place a new order
+#[utoipa::path(
+    post,
+    path = "/api/portal/orders",
+    tag = "orders",
+    security(("bearer_auth" = [])),
+    request_body = PlaceOrderRequest,
+    responses(
+        (status = 200, description = "Order placed successfully", body = Order),
+        (status = 400, description = "Order must have at least one item"),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn place_order(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -53,6 +66,17 @@ pub async fn place_order(
     Ok(Json(json!({ "success": true, "data": order, "message": "Order placed successfully" })))
 }
 
+/// [Portal] List my orders
+#[utoipa::path(
+    get,
+    path = "/api/portal/orders",
+    tag = "orders",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "List of orders for the authenticated user", body = Vec<Order>),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn list_my_orders(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -67,6 +91,20 @@ pub async fn list_my_orders(
     Ok(Json(json!({ "success": true, "data": orders })))
 }
 
+/// [Portal] Get a single order with its items
+#[utoipa::path(
+    get,
+    path = "/api/portal/orders/{id}",
+    tag = "orders",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Order UUID")
+    ),
+    responses(
+        (status = 200, description = "Order details with items"),
+        (status = 404, description = "Order not found"),
+    )
+)]
 pub async fn get_order(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -91,6 +129,21 @@ pub async fn get_order(
     Ok(Json(json!({ "success": true, "data": { "order": order, "items": items } })))
 }
 
+/// [Portal] Cancel a pending order
+#[utoipa::path(
+    patch,
+    path = "/api/portal/orders/{id}",
+    tag = "orders",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Order UUID")
+    ),
+    responses(
+        (status = 200, description = "Order cancelled"),
+        (status = 400, description = "Only pending orders can be cancelled"),
+        (status = 404, description = "Order not found"),
+    )
+)]
 pub async fn cancel_order(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -117,6 +170,17 @@ pub async fn cancel_order(
     Ok(Json(json!({ "success": true, "message": "Order cancelled" })))
 }
 
+/// [Admin] List all orders
+#[utoipa::path(
+    get,
+    path = "/api/admin/orders",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All orders", body = Vec<Order>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_list_orders(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -130,6 +194,21 @@ pub async fn admin_list_orders(
     Ok(Json(json!({ "success": true, "data": orders })))
 }
 
+/// [Admin] Update order status or notes
+#[utoipa::path(
+    patch,
+    path = "/api/admin/orders/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Order UUID")
+    ),
+    request_body = AdminUpdateOrderRequest,
+    responses(
+        (status = 200, description = "Order updated", body = Order),
+        (status = 404, description = "Order not found"),
+    )
+)]
 pub async fn admin_update_order(
     State(state): State<AppState>,
     _admin: AdminUser,

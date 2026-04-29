@@ -1,17 +1,10 @@
-import {
-  BarChart3,
-  Bot,
-  FileText,
-  Image,
-  Package,
-  Settings,
-  ShoppingBag,
-  TrendingUp,
-  Users,
-} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BarChart3, Bot, FileText, Image, Package, Settings, ShoppingBag, TrendingUp, Users } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import AdminStats from '../../components/admin/AdminStats'
 import AnalyticsChart from '../../components/admin/AnalyticsChart'
+import { getAdminDashboard, getAnalyticsData } from '../../services/admin.service'
 
 const adminItems = [
   { label: 'Dashboard', href: '/admin', icon: BarChart3 },
@@ -24,34 +17,39 @@ const adminItems = [
   { label: 'Analytics', href: '/admin/analytics', icon: Settings },
 ]
 
-const userGrowth = [
-  { name: 'Jan', value: 22, farmers: 14 },
-  { name: 'Feb', value: 41, farmers: 28 },
-  { name: 'Mar', value: 63, farmers: 44 },
-  { name: 'Apr', value: 88, farmers: 61 },
-  { name: 'May', value: 121, farmers: 92 },
-  { name: 'Jun', value: 164, farmers: 126 },
-]
-
-const orders = [
-  { name: 'Jan', value: 8 },
-  { name: 'Feb', value: 15 },
-  { name: 'Mar', value: 24 },
-  { name: 'Apr', value: 33 },
-  { name: 'May', value: 47 },
-  { name: 'Jun', value: 57 },
-]
-
-const aiUsage = [
-  { name: 'Mon', value: 42 },
-  { name: 'Tue', value: 57 },
-  { name: 'Wed', value: 71 },
-  { name: 'Thu', value: 66 },
-  { name: 'Fri', value: 86 },
-  { name: 'Sat', value: 53 },
-]
-
 export default function AdminAnalytics() {
+  const [dashboard, setDashboard] = useState<any>(null)
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [dash, analytics] = await Promise.all([
+          getAdminDashboard(),
+          getAnalyticsData(),
+        ])
+        setDashboard(dash)
+        setAnalytics(analytics)
+      } catch {
+        toast.error('Failed to load analytics')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
+
+  const signups = (analytics?.signups_30d ?? []).map((d: any) => ({
+    name: d.day?.slice(5) ?? '',
+    value: d.count ?? 0,
+  }))
+
+  const orders = (analytics?.orders_30d ?? []).map((d: any) => ({
+    name: d.day?.slice(5) ?? '',
+    value: d.count ?? 0,
+  }))
+
   return (
     <main className="flex min-h-screen bg-willbry-light">
       <div className="hidden lg:block">
@@ -74,54 +72,42 @@ export default function AdminAnalytics() {
 
           <AdminStats
             stats={[
-              { label: 'Total Revenue', value: 'UGX 17.4M', icon: TrendingUp, trend: '+18%' },
-              { label: 'Registered Users', value: 164, icon: Users, trend: '+26%' },
-              { label: 'Orders', value: 57, icon: ShoppingBag, trend: '+12%' },
-              { label: 'AI Conversations', value: 375, icon: Bot, trend: '+31%' },
+              { label: 'Registered Users', value: loading ? '…' : dashboard?.users?.total ?? 0, icon: Users },
+              { label: 'Total Orders', value: loading ? '…' : dashboard?.orders?.total ?? 0, icon: ShoppingBag, trend: `+${dashboard?.orders?.this_month ?? 0} this month` },
+              { label: 'AI Chats', value: loading ? '…' : dashboard?.ai_chats ?? 0, icon: Bot },
+              { label: 'Bookings', value: loading ? '…' : dashboard?.bookings ?? 0, icon: TrendingUp },
             ]}
           />
 
           <div className="mt-8 grid gap-8 xl:grid-cols-2">
             <AnalyticsChart
-              title="User growth"
-              description="Total registered users over time."
-              data={userGrowth}
+              title="User signups (last 30 days)"
+              description="Daily new registrations."
+              data={signups.length ? signups : [{ name: 'No data', value: 0 }]}
               type="line"
               dataKey="value"
             />
 
             <AnalyticsChart
-              title="Order growth"
-              description="Product and service orders by month."
-              data={orders}
+              title="Orders (last 30 days)"
+              description="Daily order volume."
+              data={orders.length ? orders : [{ name: 'No data', value: 0 }]}
               type="bar"
               dataKey="value"
             />
 
-            <AnalyticsChart
-              title="AI assistant usage"
-              description="Daily AI conversations this week."
-              data={aiUsage}
-              type="line"
-              dataKey="value"
-            />
-
-            <section className="rounded-3xl border border-willbry-green-100 bg-white p-6 shadow-card">
-              <h2 className="text-lg font-black text-willbry-green-900">
-                Strategic insights
-              </h2>
-              <div className="mt-6 space-y-4">
+            <section className="rounded-3xl border border-willbry-green-100 bg-white p-6 shadow-card xl:col-span-2">
+              <h2 className="text-lg font-black text-willbry-green-900">Platform summary</h2>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
-                  'Farmer registrations are growing fastest in Kabale and Rukiga.',
-                  'SmartCrisps and SmartFlour are the highest-interest products.',
-                  'AI assistant usage peaks around pest and disease questions.',
-                  'Resource downloads show strong demand for potato and post-harvest guides.',
-                ].map((insight) => (
-                  <div
-                    key={insight}
-                    className="rounded-2xl bg-willbry-light p-4 text-sm font-semibold leading-6 text-willbry-green-900"
-                  >
-                    {insight}
+                  { label: 'Blog posts', value: dashboard?.content?.blog_posts ?? 0 },
+                  { label: 'Active products', value: dashboard?.content?.products ?? 0 },
+                  { label: 'Active farmers', value: dashboard?.farmers ?? 0 },
+                  { label: 'Pending orders', value: dashboard?.orders?.pending ?? 0 },
+                ].map(({ label, value }) => (
+                  <div key={label} className="rounded-2xl bg-willbry-light p-5">
+                    <p className="text-sm font-bold text-gray-500">{label}</p>
+                    <p className="mt-2 text-3xl font-black text-willbry-green-900">{loading ? '…' : value}</p>
                   </div>
                 ))}
               </div>
@@ -132,94 +118,3 @@ export default function AdminAnalytics() {
     </main>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import {
-//   Bar,
-//   BarChart,
-//   CartesianGrid,
-//   Line,
-//   LineChart,
-//   ResponsiveContainer,
-//   Tooltip,
-//   XAxis,
-//   YAxis,
-// } from 'recharts'
-
-// export interface ChartDataPoint {
-//   name: string
-//   value: number
-//   [key: string]: string | number
-// }
-
-// interface AnalyticsChartProps {
-//   title: string
-//   description?: string
-//   data: ChartDataPoint[]
-//   type?: 'line' | 'bar'
-//   dataKey?: string
-// }
-
-// export default function AnalyticsChart({
-//   title,
-//   description,
-//   data,
-//   type = 'line',
-//   dataKey = 'value',
-// }: AnalyticsChartProps) {
-//   return (
-//     <section className="rounded-3xl border border-willbry-green-100 bg-white p-6 shadow-card">
-//       <div className="mb-6">
-//         <h3 className="text-lg font-black tracking-tight text-willbry-green-900">
-//           {title}
-//         </h3>
-//         {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
-//       </div>
-
-//       <div className="h-80">
-//         <ResponsiveContainer width="100%" height="100%">
-//           {type === 'bar' ? (
-//             <BarChart data={data}>
-//               <CartesianGrid strokeDasharray="3 3" stroke="#e0f0e4" />
-//               <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#6b7f72" />
-//               <YAxis tick={{ fontSize: 12 }} stroke="#6b7f72" />
-//               <Tooltip />
-//               <Bar dataKey={dataKey} fill="#2d6a4f" radius={[10, 10, 0, 0]} />
-//             </BarChart>
-//           ) : (
-//             <LineChart data={data}>
-//               <CartesianGrid strokeDasharray="3 3" stroke="#e0f0e4" />
-//               <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#6b7f72" />
-//               <YAxis tick={{ fontSize: 12 }} stroke="#6b7f72" />
-//               <Tooltip />
-//               <Line
-//                 type="monotone"
-//                 dataKey={dataKey}
-//                 stroke="#2d6a4f"
-//                 strokeWidth={3}
-//                 dot={{ r: 4, fill: '#52b788' }}
-//                 activeDot={{ r: 6 }}
-//               />
-//             </LineChart>
-//           )}
-//         </ResponsiveContainer>
-//       </div>
-//     </section>
-//   )
-// }

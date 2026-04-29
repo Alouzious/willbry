@@ -9,6 +9,15 @@ use crate::{
     models::price::{CommodityPrice, CreatePriceRequest, UpdatePriceRequest},
 };
 
+/// List current commodity market prices
+#[utoipa::path(
+    get,
+    path = "/api/prices",
+    tag = "prices",
+    responses(
+        (status = 200, description = "Current commodity prices in UGX", body = Vec<CommodityPrice>),
+    )
+)]
 pub async fn list_prices(State(state): State<AppState>) -> AppResult<Json<Value>> {
     let prices = sqlx::query_as::<_, CommodityPrice>(
         "SELECT * FROM commodity_prices ORDER BY commodity ASC"
@@ -19,6 +28,17 @@ pub async fn list_prices(State(state): State<AppState>) -> AppResult<Json<Value>
     Ok(Json(json!({ "success": true, "data": prices })))
 }
 
+/// [Admin] List all commodity prices
+#[utoipa::path(
+    get,
+    path = "/api/admin/prices",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All commodity prices", body = Vec<CommodityPrice>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_list_prices(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -26,6 +46,18 @@ pub async fn admin_list_prices(
     list_prices(State(state)).await
 }
 
+/// [Admin] Add a new commodity price entry
+#[utoipa::path(
+    post,
+    path = "/api/admin/prices",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    request_body = CreatePriceRequest,
+    responses(
+        (status = 200, description = "Price created", body = CommodityPrice),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn create_price(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -45,6 +77,21 @@ pub async fn create_price(
     Ok(Json(json!({ "success": true, "data": price })))
 }
 
+/// [Admin] Update a commodity price
+#[utoipa::path(
+    put,
+    path = "/api/admin/prices/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "Price UUID")
+    ),
+    request_body = UpdatePriceRequest,
+    responses(
+        (status = 200, description = "Price updated", body = CommodityPrice),
+        (status = 404, description = "Price not found"),
+    )
+)]
 pub async fn update_price(
     State(state): State<AppState>,
     _admin: AdminUser,

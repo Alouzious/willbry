@@ -17,6 +17,15 @@ pub mod bookings;
 use axum::{Json, response::IntoResponse};
 use serde_json::json;
 
+/// Health check
+#[utoipa::path(
+    get,
+    path = "/health",
+    tag = "health",
+    responses(
+        (status = 200, description = "Backend is running", body = serde_json::Value)
+    )
+)]
 pub async fn health() -> impl IntoResponse {
     Json(json!({
         "success": true,

@@ -9,6 +9,17 @@ use crate::{
     models::user::{UpdateProfileRequest, AdminUpdateUserRequest, UserPublic},
 };
 
+/// [Portal] Get authenticated user profile
+#[utoipa::path(
+    get,
+    path = "/api/portal/profile",
+    tag = "portal",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "User profile", body = UserPublic),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn get_profile(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -24,6 +35,18 @@ pub async fn get_profile(
     Ok(Json(json!({ "success": true, "data": user })))
 }
 
+/// [Portal] Update authenticated user profile
+#[utoipa::path(
+    put,
+    path = "/api/portal/profile",
+    tag = "portal",
+    security(("bearer_auth" = [])),
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile updated", body = UserPublic),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn update_profile(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -48,6 +71,17 @@ pub async fn update_profile(
     Ok(Json(json!({ "success": true, "data": user })))
 }
 
+/// [Portal] Get dashboard summary stats for the current user
+#[utoipa::path(
+    get,
+    path = "/api/portal/dashboard",
+    tag = "portal",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Dashboard stats: orders, bookings, AI chat count"),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn portal_dashboard(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -93,6 +127,17 @@ pub async fn portal_dashboard(
 
 // ── ADMIN HANDLERS ────────────────────────────────────────────────────
 
+/// [Admin] List all users
+#[utoipa::path(
+    get,
+    path = "/api/admin/users",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "All users", body = Vec<UserPublic>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_list_users(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -107,6 +152,20 @@ pub async fn admin_list_users(
     Ok(Json(json!({ "success": true, "data": users, "total": users.len() })))
 }
 
+/// [Admin] Get a single user by ID
+#[utoipa::path(
+    get,
+    path = "/api/admin/users/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "User UUID")
+    ),
+    responses(
+        (status = 200, description = "User details", body = UserPublic),
+        (status = 404, description = "User not found"),
+    )
+)]
 pub async fn admin_get_user(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -124,6 +183,21 @@ pub async fn admin_get_user(
     Ok(Json(json!({ "success": true, "data": user })))
 }
 
+/// [Admin] Update user role, status, or type
+#[utoipa::path(
+    patch,
+    path = "/api/admin/users/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "User UUID")
+    ),
+    request_body = AdminUpdateUserRequest,
+    responses(
+        (status = 200, description = "User updated", body = UserPublic),
+        (status = 404, description = "User not found"),
+    )
+)]
 pub async fn admin_update_user(
     State(state): State<AppState>,
     _admin: AdminUser,
@@ -150,6 +224,20 @@ pub async fn admin_update_user(
     Ok(Json(json!({ "success": true, "data": user })))
 }
 
+/// [Admin] Deactivate a user
+#[utoipa::path(
+    delete,
+    path = "/api/admin/users/{id}",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    params(
+        ("id" = Uuid, Path, description = "User UUID")
+    ),
+    responses(
+        (status = 200, description = "User deactivated"),
+        (status = 404, description = "User not found"),
+    )
+)]
 pub async fn admin_delete_user(
     State(state): State<AppState>,
     _admin: AdminUser,

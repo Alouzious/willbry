@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Bot, Download, FileText, Package, ShoppingBag, TrendingDown, TrendingUp } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import { Badge } from '../../components/ui/Badge'
-import AnalyticsChart from '../../components/admin/AnalyticsChart'
+import { getMarketPrices } from '../../services/portal.service'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -11,23 +13,24 @@ const portalItems = [
   { label: 'Farm Profile', href: '/portal/farm-profile', icon: FileText },
 ]
 
-const prices = [
-  { commodity: 'Irish Potatoes', price: 1200, unit: 'kg', change: 8 },
-  { commodity: 'Maize', price: 950, unit: 'kg', change: -3 },
-  { commodity: 'Beans', price: 3200, unit: 'kg', change: 5 },
-  { commodity: 'Coffee', price: 7800, unit: 'kg', change: 11 },
-  { commodity: 'Sorghum', price: 1600, unit: 'kg', change: 2 },
-]
-
-const chartData = [
-  { name: 'Jan', value: 900 },
-  { name: 'Feb', value: 980 },
-  { name: 'Mar', value: 1040 },
-  { name: 'Apr', value: 1100 },
-  { name: 'May', value: 1200 },
-]
-
 export default function PortalMarketPrices() {
+  const [prices, setPrices] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getMarketPrices()
+        setPrices(Array.isArray(data) ? data : [])
+      } catch {
+        toast.error('Failed to load market prices')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
+
   return (
     <main className="flex min-h-screen bg-willbry-light">
       <div className="hidden lg:block">
@@ -48,40 +51,36 @@ export default function PortalMarketPrices() {
             </p>
           </div>
 
-          <div className="grid gap-8 xl:grid-cols-[.95fr_1.05fr]">
+          {loading ? (
+            <p className="text-sm text-gray-500">Loading prices…</p>
+          ) : (
             <div className="overflow-hidden rounded-3xl border border-willbry-green-100 bg-white shadow-card">
               <table className="w-full text-left">
                 <thead className="bg-willbry-light">
                   <tr>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-willbry-green-700">
-                      Commodity
-                    </th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-willbry-green-700">
-                      Price
-                    </th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-willbry-green-700">
-                      Trend
-                    </th>
+                    {['Commodity', 'Price (UGX)', 'Unit', 'Trend'].map((head) => (
+                      <th key={head} className="px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-willbry-green-700">
+                        {head}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-willbry-green-100">
                   {prices.map((item) => {
-                    const up = item.change >= 0
+                    const change = item.change_percent ?? 0
+                    const up = change >= 0
                     const Icon = up ? TrendingUp : TrendingDown
-
                     return (
-                      <tr key={item.commodity} className="hover:bg-willbry-light">
-                        <td className="px-6 py-4 font-black text-willbry-green-900">
-                          {item.commodity}
-                        </td>
+                      <tr key={item.id} className="hover:bg-willbry-light">
+                        <td className="px-6 py-4 font-black text-willbry-green-900">{item.commodity}</td>
                         <td className="px-6 py-4 text-sm font-bold text-gray-700">
-                          UGX {item.price.toLocaleString()} / {item.unit}
+                          {item.price_ugx.toLocaleString()}
                         </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-gray-600">{item.unit}</td>
                         <td className="px-6 py-4">
                           <Badge variant={up ? 'green' : 'red'}>
                             <Icon size={13} />
-                            {Math.abs(item.change)}%
+                            {Math.abs(change)}%
                           </Badge>
                         </td>
                       </tr>
@@ -90,14 +89,7 @@ export default function PortalMarketPrices() {
                 </tbody>
               </table>
             </div>
-
-            <AnalyticsChart
-              title="Irish potato price trend"
-              description="Indicative price movement over recent months."
-              data={chartData}
-              type="line"
-            />
-          </div>
+          )}
         </div>
       </section>
     </main>

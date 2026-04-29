@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bot, Download, FileText, MapPin, Package, Save, ShoppingBag, Sprout } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
+import { getFarmProfile, upsertFarmProfile } from '../../services/portal.service'
 
 const portalItems = [
   { label: 'Dashboard', href: '/portal', icon: ShoppingBag },
@@ -16,23 +17,50 @@ const portalItems = [
 export default function PortalFarmProfile() {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
-    district: 'Kabale',
-    size_acres: '2',
-    crops: 'Irish potatoes, beans',
-    irrigation: 'Rain-fed',
+    district: '',
+    size_acres: '',
+    crops: '',
+    irrigation: '',
   })
 
-  const update = (key: keyof typeof form, value: string) => {
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getFarmProfile()
+        if (data) {
+          setForm({
+            district: data.district ?? '',
+            size_acres: data.size_acres?.toString() ?? '',
+            crops: data.crops ?? '',
+            irrigation: data.irrigation ?? '',
+          })
+        }
+      } catch {
+        // no profile yet — form stays empty
+      }
+    }
+    void load()
+  }, [])
+
+  const update = (key: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))
-  }
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
-    setTimeout(() => {
+    try {
+      await upsertFarmProfile({
+        district: form.district,
+        size_acres: form.size_acres ? parseFloat(form.size_acres) : undefined,
+        crops: form.crops,
+        irrigation: form.irrigation || undefined,
+      })
       toast.success('Farm profile saved')
+    } catch {
+      toast.error('Failed to save farm profile')
+    } finally {
       setLoading(false)
-    }, 500)
+    }
   }
 
   return (
@@ -63,29 +91,28 @@ export default function PortalFarmProfile() {
                   value={form.district}
                   onChange={(e) => update('district', e.target.value)}
                   leftIcon={<MapPin size={16} />}
+                  required
                 />
-
                 <Input
                   label="Farm size"
                   value={form.size_acres}
                   onChange={(e) => update('size_acres', e.target.value)}
                   rightAddon="acres"
+                  type="number"
                 />
-
                 <Input
                   label="Main crops"
                   value={form.crops}
                   onChange={(e) => update('crops', e.target.value)}
                   leftIcon={<Sprout size={16} />}
                   hint="Separate crops with commas."
+                  required
                 />
-
                 <Input
                   label="Irrigation type"
                   value={form.irrigation}
                   onChange={(e) => update('irrigation', e.target.value)}
                 />
-
                 <Button type="submit" loading={loading} leftIcon={<Save size={16} />}>
                   Save Farm Profile
                 </Button>
@@ -99,7 +126,6 @@ export default function PortalFarmProfile() {
                 A good farm profile makes digital advisory more relevant. The AI assistant can consider
                 your location, crop type, and farm size when giving practical guidance.
               </p>
-
               <div className="mt-7 grid gap-3">
                 {['Better crop advice', 'Relevant resources', 'Market-aware planning'].map((item) => (
                   <div key={item} className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold">

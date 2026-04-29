@@ -22,6 +22,19 @@ async fn load_ai_config(state: &AppState) -> (String, String) {
     row.unwrap_or_else(|| (default_system_prompt(), "llama-3.3-70b-versatile".to_string()))
 }
 
+/// [Portal] Send a message to the AI farming assistant
+#[utoipa::path(
+    post,
+    path = "/api/portal/chat",
+    tag = "chat",
+    security(("bearer_auth" = [])),
+    request_body = SendMessageRequest,
+    responses(
+        (status = 200, description = "AI reply returned. Conversation is persisted."),
+        (status = 400, description = "Message cannot be empty"),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn send_message(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -81,6 +94,17 @@ pub async fn send_message(
     })))
 }
 
+/// [Portal] Get chat history for the authenticated user
+#[utoipa::path(
+    get,
+    path = "/api/portal/chat",
+    tag = "chat",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Last 100 chat messages for the user", body = Vec<ChatMessage>),
+        (status = 401, description = "Unauthorized"),
+    )
+)]
 pub async fn get_history(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -95,6 +119,17 @@ pub async fn get_history(
     Ok(Json(json!({ "success": true, "data": messages })))
 }
 
+/// Public preview chat — no auth required, no history saved
+#[utoipa::path(
+    post,
+    path = "/api/chat/preview",
+    tag = "chat",
+    request_body = SendMessageRequest,
+    responses(
+        (status = 200, description = "One-shot AI reply (no history)"),
+        (status = 400, description = "Message cannot be empty"),
+    )
+)]
 pub async fn preview_chat(
     State(state): State<AppState>,
     Json(body): Json<SendMessageRequest>,
@@ -117,6 +152,17 @@ pub async fn preview_chat(
     Ok(Json(json!({ "success": true, "reply": reply })))
 }
 
+/// [Admin] View all chat logs
+#[utoipa::path(
+    get,
+    path = "/api/admin/chat-logs",
+    tag = "admin",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Last 500 chat messages across all users", body = Vec<ChatMessage>),
+        (status = 403, description = "Admin role required"),
+    )
+)]
 pub async fn admin_chat_logs(
     State(state): State<AppState>,
     _admin: AdminUser,

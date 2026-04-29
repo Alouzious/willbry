@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 use chrono::{DateTime, Utc, NaiveDate};
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct Booking {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -16,14 +17,14 @@ pub struct Booking {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateBookingRequest {
     pub service_type: String,
     pub preferred_date: Option<NaiveDate>,
     pub description: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct AdminUpdateBookingRequest {
     pub status: Option<String>,
     pub admin_notes: Option<String>,
