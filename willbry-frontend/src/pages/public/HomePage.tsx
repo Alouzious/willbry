@@ -18,10 +18,10 @@ import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import ProductCard from '../../components/public/ProductCard'
 import BlogCard from '../../components/public/BlogCard'
+import AiPreviewWidget from '../../components/public/AiPreviewWidget'
 import { Button } from '../../components/ui/Button'
 import type { Product, BlogPost } from '../../types'
 
-// Aerial / drone-style wide farm shots — clear, landscape, professional
 const heroImages = [
   {
     url: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=2070&q=90',
@@ -119,7 +119,7 @@ const posts: BlogPost[] = [
 
 export default function HomePage() {
   const [current, setCurrent] = useState(0)
-  const [key, setKey] = useState(0) // re-mounts active slide to restart Ken Burns
+  const [key, setKey] = useState(0)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -150,15 +150,12 @@ export default function HomePage() {
       <main>
         {/* ── HERO ── */}
         <section className="relative min-h-screen overflow-hidden pt-28 text-white">
-
-          {/* ── Crossfade slides with Ken Burns on active ── */}
           {heroImages.map(({ url, position }, i) => (
             <div
               key={url}
               className="absolute inset-0 transition-opacity duration-[2200ms] ease-in-out"
               style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
             >
-              {/* Only the active slide gets the KB class; key forces restart on each transition */}
               <div
                 key={i === current ? key : i}
                 className={i === current ? 'slide-kb' : ''}
@@ -173,38 +170,29 @@ export default function HomePage() {
             </div>
           ))}
 
-          {/* ── Overlay — reduced darkness so images look vivid and clear ── */}
           <div
             className="absolute inset-0"
             style={{
               zIndex: 2,
-              background:
-                'linear-gradient(135deg, rgba(10,36,20,0.68) 0%, rgba(30,80,55,0.48) 55%, rgba(10,36,20,0.40) 100%)',
+              background: 'linear-gradient(135deg, rgba(10,36,20,0.68) 0%, rgba(30,80,55,0.48) 55%, rgba(10,36,20,0.40) 100%)',
             }}
           />
-
-          {/* Subtle teal/amber accent glows (original) */}
           <div
             className="absolute inset-0"
             style={{
               zIndex: 3,
-              background:
-                'radial-gradient(circle at 18% 22%, rgba(82,183,136,0.16) 0%, transparent 28%), radial-gradient(circle at 80% 28%, rgba(231,111,81,0.09) 0%, transparent 26%)',
+              background: 'radial-gradient(circle at 18% 22%, rgba(82,183,136,0.16) 0%, transparent 28%), radial-gradient(circle at 80% 28%, rgba(231,111,81,0.09) 0%, transparent 26%)',
             }}
           />
-
-          {/* Fine grid texture (original, very subtle) */}
           <div
             className="absolute inset-0 opacity-[0.05]"
             style={{
               zIndex: 4,
-              backgroundImage:
-                'linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)',
+              backgroundImage: 'linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)',
               backgroundSize: '60px 60px',
             }}
           />
 
-          {/* ── Original content — zero changes ── */}
           <div className="relative mx-auto grid min-h-[calc(100vh-7rem)] max-w-7xl items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8" style={{ zIndex: 5 }}>
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-willbry-teal backdrop-blur">
@@ -266,7 +254,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Dot indicators */}
           <div className="absolute bottom-8 left-1/2 flex -translate-x-1/2 gap-2" style={{ zIndex: 6 }}>
             {heroImages.map((_, i) => (
               <button
@@ -281,8 +268,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── Everything below untouched ── */}
-
+        {/* ── SERVICES ── */}
         <section className="bg-white py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl">
@@ -309,7 +295,47 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-willbry-light py-24">
+        {/* ── AI CHAT SECTION ── */}
+        <section id="ai-chat" className="bg-willbry-light py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-12 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-willbry-teal">
+                  AI farming assistant
+                </p>
+                <h2 className="mt-4 text-4xl font-black tracking-tight text-willbry-green-900">
+                  Ask WillBry AI anything about farming.
+                </h2>
+                <p className="mt-5 leading-8 text-gray-600">
+                  No account needed. Get instant, practical answers on crops, pests, post-harvest handling,
+                  value addition, market prices, and WillBry's services — powered by AI trained for Ugandan agriculture.
+                </p>
+
+                <div className="mt-8 grid gap-3">
+                  {[
+                    { label: 'Crop guidance', text: 'Pest control, diseases, fertilizer, irrigation.' },
+                    { label: 'Value addition', text: 'How to process and package your produce.' },
+                    { label: 'Market advice', text: 'Pricing, demand, and market readiness tips.' },
+                    { label: 'WillBry services', text: 'Training, consultancy, and platform features.' },
+                  ].map(({ label, text }) => (
+                    <div key={label} className="flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card">
+                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-willbry-teal" />
+                      <div>
+                        <p className="text-sm font-black text-willbry-green-900">{label}</p>
+                        <p className="text-xs leading-5 text-gray-500">{text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <AiPreviewWidget />
+            </div>
+          </div>
+        </section>
+
+        {/* ── PRODUCTS ── */}
+        <section className="bg-white py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div>
@@ -331,7 +357,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-white py-24">
+        {/* ── WHY US ── */}
+        <section className="bg-willbry-light py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
               <div>
@@ -362,7 +389,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-willbry-light py-24">
+        {/* ── BLOG ── */}
+        <section className="bg-white py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div>
@@ -382,7 +410,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-white py-24">
+        {/* ── CTA ── */}
+        <section className="bg-willbry-light py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="rounded-[2rem] bg-gradient-to-br from-willbry-green-900 to-willbry-green-500 p-8 text-white shadow-2xl sm:p-12 lg:p-16">
               <Quote className="h-10 w-10 text-willbry-teal" />

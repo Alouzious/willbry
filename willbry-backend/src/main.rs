@@ -2,6 +2,7 @@ use axum::{
     routing::{get, post, put, delete, patch},
     Router,
 };
+use axum::http::HeaderValue;
 use std::sync::Arc;
 use tower_http::cors::{CorsLayer, Any};
 use tower_http::trace::TraceLayer;
@@ -227,7 +228,10 @@ async fn main() {
     };
 
     let cors = CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin([
+            "http://localhost:5173".parse::<HeaderValue>().unwrap(),
+            "http://127.0.0.1:5173".parse::<HeaderValue>().unwrap(),
+        ])
         .allow_methods(Any)
         .allow_headers(Any);
 

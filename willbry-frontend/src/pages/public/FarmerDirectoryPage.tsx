@@ -1,59 +1,41 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { MapPin, Search, Sprout, Users } from 'lucide-react'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import PageBanner from '../../components/layout/PageBanner'
 import { Input } from '../../components/ui/Input'
 import { Badge } from '../../components/ui/Badge'
-
-interface Farmer {
-  id: string
-  name: string
-  district: string
-  location: string
-  crops: string[]
-  phone?: string
-}
-
-const farmers: Farmer[] = [
-  {
-    id: 'f1',
-    name: 'Kigezi Potato Farmers Cooperative',
-    district: 'Kabale',
-    location: 'Northern Division',
-    crops: ['Irish potatoes', 'Beans'],
-  },
-  {
-    id: 'f2',
-    name: 'Rukiga Highlands Growers',
-    district: 'Rukiga',
-    location: 'Muhanga',
-    crops: ['Maize', 'Beans', 'Sorghum'],
-  },
-  {
-    id: 'f3',
-    name: 'Rubanda Coffee & Food Crops Group',
-    district: 'Rubanda',
-    location: 'Muko',
-    crops: ['Coffee', 'Maize', 'Irish potatoes'],
-  },
-]
+import { listFarmers } from '../../services/public.service'
 
 export default function FarmerDirectoryPage() {
+  const [farmers, setFarmers] = useState<any[]>([])
   const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await listFarmers({ per_page: 100 })
+        setFarmers(Array.isArray(data) ? data : [])
+      } catch {
+        setFarmers([])
+      }
+    }
+    void load()
+  }, [])
 
   const filtered = useMemo(() => {
     const search = query.toLowerCase()
+    return farmers.filter((farmer) =>
+      farmer.name.toLowerCase().includes(search) ||
+      farmer.district.toLowerCase().includes(search) ||
+      farmer.location.toLowerCase().includes(search) ||
+      farmer.crops.toLowerCase().includes(search)
+    )
+  }, [query, farmers])
 
-    return farmers.filter((farmer) => {
-      return (
-        farmer.name.toLowerCase().includes(search) ||
-        farmer.district.toLowerCase().includes(search) ||
-        farmer.location.toLowerCase().includes(search) ||
-        farmer.crops.join(' ').toLowerCase().includes(search)
-      )
-    })
-  }, [query])
+  // crops from backend is a string — split by comma for display
+  const getCrops = (crops: string): string[] =>
+    crops.split(',').map((c) => c.trim()).filter(Boolean)
 
   return (
     <>
@@ -76,7 +58,6 @@ export default function FarmerDirectoryPage() {
                   A field network built for collaboration.
                 </h2>
               </div>
-
               <Input
                 placeholder="Search by crop, district, or group..."
                 value={query}
@@ -105,7 +86,7 @@ export default function FarmerDirectoryPage() {
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-2">
-                    {farmer.crops.map((crop) => (
+                    {getCrops(farmer.crops).map((crop) => (
                       <Badge key={crop} variant="green" size="sm">
                         <Sprout size={12} />
                         {crop}

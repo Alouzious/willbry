@@ -25,8 +25,17 @@ export default function LoginPage() {
 
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
-      <section className="relative hidden overflow-hidden bg-willbry-green-900 p-10 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(82,183,136,0.35),transparent_35%),linear-gradient(135deg,#0d2b18,#2d6a4f)]" />
+      <section
+        className="relative hidden overflow-hidden p-10 text-white lg:flex lg:flex-col lg:justify-between"
+        style={{
+          backgroundImage:
+            'url(https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1400&q=80)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Dark green overlay to maintain brand feel and text readability */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(82,183,136,0.25),transparent_40%),linear-gradient(135deg,rgba(13,43,24,0.82),rgba(45,106,79,0.75))]" />
 
         <Link to="/" className="relative flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-willbry-teal">

@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   User,
   LogOut,
+  Bot,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { useCart } from '../../hooks/useCart'
@@ -127,6 +128,15 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
+          {/* Ask AI button */}
+          <a
+            href="#ai-chat"
+            className="flex items-center gap-2 rounded-xl border border-willbry-green-200 bg-willbry-green-50 px-3 py-2 text-sm font-bold text-willbry-green-700 transition-all hover:bg-willbry-green-100 hover:text-willbry-green-600"
+          >
+            <Bot size={16} />
+            Ask AI
+          </a>
+
           <Link
             to="/products"
             className="relative rounded-xl p-2.5 text-willbry-green-700 transition-all hover:bg-willbry-green-50 hover:text-willbry-green-500"
@@ -216,6 +226,16 @@ export default function Navbar() {
                 ))}
               </div>
             ))}
+
+            {/* Ask AI — mobile */}
+            <a
+              href="#ai-chat"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 rounded-xl bg-willbry-green-50 px-4 py-3 text-sm font-bold text-willbry-green-700"
+            >
+              <Bot size={16} />
+              Ask WillBry AI
+            </a>
           </div>
 
           <div className="mt-4 grid gap-2 border-t border-willbry-green-100 pt-4">
