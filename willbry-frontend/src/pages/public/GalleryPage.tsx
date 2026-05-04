@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import PageBanner from '../../components/layout/PageBanner'
@@ -7,28 +7,21 @@ import type { GalleryItem } from '../../components/public/GalleryGrid'
 import { listImages } from '../../services/public.service'
 
 export default function GalleryPage() {
-  const [items, setItems] = useState<GalleryItem[]>([])
+  const { data: raw = [] } = useQuery({
+    queryKey: ['gallery'],
+    queryFn: listImages,
+    staleTime: 1000 * 60 * 10,
+  })
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await listImages()
-        const mapped: GalleryItem[] = (Array.isArray(data) ? data : []).map((img: any) => ({
-          id: img.id,
-          url: img.url,
-          title: img.caption ?? img.category,
-          caption: img.caption,
-          category: img.category,
-        }))
-        setItems(mapped)
-      } catch {
-        setItems([])
-      }
-    }
-    void load()
-  }, [])
+  const items: GalleryItem[] = (Array.isArray(raw) ? raw : []).map((img: any) => ({
+    id: img.id,
+    url: img.url,
+    title: img.caption ?? img.category,
+    caption: img.caption,
+    category: img.category,
+  }))
 
-  const categories = [...new Set(items.map((i) => i.category))]
+  const galleryCategories = [...new Set(items.map((i) => i.category))]
 
   return (
     <>
@@ -47,7 +40,7 @@ export default function GalleryPage() {
                 <p className="font-black text-willbry-green-900">No images yet.</p>
               </div>
             ) : (
-              <GalleryGrid items={items} categories={categories} />
+              <GalleryGrid items={items} categories={galleryCategories} />
             )}
           </div>
         </section>

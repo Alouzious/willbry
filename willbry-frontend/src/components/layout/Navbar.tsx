@@ -98,7 +98,7 @@ export default function Navbar() {
                   <div className="absolute left-0 top-full mt-2 w-56 rounded-2xl border border-willbry-green-100 bg-white p-2 shadow-card-hover">
                     {link.children.map((child) => (
                       <NavLink
-                        key={child.href}
+                        key={child.label}
                         to={child.href}
                         className="block rounded-xl px-4 py-2.5 text-sm font-medium text-willbry-green-800 transition-all hover:bg-willbry-green-50 hover:text-willbry-green-600"
                       >
@@ -128,7 +128,6 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
-          {/* Ask AI button */}
           <a
             href="#ai-chat"
             className="flex items-center gap-2 rounded-xl border border-willbry-green-200 bg-willbry-green-50 px-3 py-2 text-sm font-bold text-willbry-green-700 transition-all hover:bg-willbry-green-100 hover:text-willbry-green-600"
@@ -216,7 +215,7 @@ export default function Navbar() {
 
                 {link.children?.map((child) => (
                   <NavLink
-                    key={child.href}
+                    key={child.label}
                     to={child.href}
                     onClick={() => setMobileOpen(false)}
                     className="block rounded-xl px-8 py-2 text-sm font-medium text-gray-600 hover:text-willbry-green-600"
@@ -227,7 +226,6 @@ export default function Navbar() {
               </div>
             ))}
 
-            {/* Ask AI — mobile */}
             <a
               href="#ai-chat"
               onClick={() => setMobileOpen(false)}

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import Navbar from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import PageBanner from '../../components/layout/PageBanner'
@@ -13,21 +14,16 @@ const categories: Array<'all' | BlogCategory> = [
 ]
 
 export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<'all' | BlogCategory>('all')
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await listPosts({ per_page: 50 })
-        setPosts(Array.isArray(res.data) ? res.data : [])
-      } catch {
-        setPosts([])
-      }
-    }
-    void load()
-  }, [])
+  const { data } = useQuery({
+    queryKey: ['blog-posts'],
+    queryFn: () => listPosts({ per_page: 50 }),
+    staleTime: 1000 * 60 * 10,
+  })
+
+  const posts: BlogPost[] = Array.isArray(data?.data) ? data.data : []
 
   const filteredPosts = useMemo(() => {
     const search = query.toLowerCase()

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Bot, Download, FileText, Package, Plus, ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
@@ -19,27 +19,20 @@ const portalItems = [
 ]
 
 export default function PortalDashboard() {
-  const [stats, setStats] = useState({ total_orders: 0, pending_orders: 0, ai_chats_total: 0, bookings: 0 })
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: stats = { total_orders: 0, pending_orders: 0, ai_chats_total: 0, bookings: 0 }, isLoading: statsLoading } = useQuery({
+    queryKey: ['portal-dashboard'],
+    queryFn: getPortalDashboard,
+    staleTime: 1000 * 60,
+  })
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [dashData, ordersData] = await Promise.all([
-          getPortalDashboard(),
-          listMyOrders(),
-        ])
-        setStats(dashData)
-        setOrders(Array.isArray(ordersData) ? ordersData.slice(0, 5) : [])
-      } catch {
-        toast.error('Failed to load dashboard')
-      } finally {
-        setLoading(false)
-      }
-    }
-    void load()
-  }, [])
+  const { data: ordersRaw, isLoading: ordersLoading } = useQuery({
+    queryKey: ['my-orders'],
+    queryFn: listMyOrders,
+    staleTime: 1000 * 60,
+  })
+
+  const loading = statsLoading || ordersLoading
+  const orders = Array.isArray(ordersRaw) ? ordersRaw.slice(0, 5) : []
 
   return (
     <main className="flex min-h-screen bg-willbry-light">

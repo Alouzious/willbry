@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   BarChart3,
@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import Sidebar from '../../components/layout/Sidebar'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
+import { createPost, updatePost, adminListPosts } from '../../services/admin.service'
 import type { BlogCategory } from '../../types'
 
 const adminItems = [
@@ -31,6 +32,9 @@ const adminItems = [
 
 export default function AdminBlogEditor() {
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const isEditing = !!id
+
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     title: '',
@@ -42,19 +46,75 @@ export default function AdminBlogEditor() {
     published: false,
   })
 
+  // Load existing post if editing
+  useEffect(() => {
+    if (!isEditing) return
+    const load = async () => {
+      try {
+        const posts = await adminListPosts()
+        const post = Array.isArray(posts) ? posts.find((p: { id: string }) => p.id === id) : null
+        if (post) {
+          setForm({
+            title: post.title ?? '',
+            slug: post.slug ?? '',
+            excerpt: post.excerpt ?? '',
+            content: post.content ?? '',
+            category: post.category ?? 'agri_tech',
+            cover_image: post.cover_image ?? '',
+            published: post.published ?? false,
+          })
+        }
+      } catch {
+        toast.error('Failed to load post')
+      }
+    }
+    void load()
+  }, [id, isEditing])
+
   const update = (key: keyof typeof form, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  const submit = (event: React.FormEvent) => {
-    event.preventDefault()
-    setLoading(true)
+  const autoSlug = (title: string) =>
+    title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
 
-    setTimeout(() => {
-      toast.success('Blog post saved')
-      setLoading(false)
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!form.title || !form.slug || !form.content) {
+      toast.error('Title, slug, and content are required')
+      return
+    }
+    setLoading(true)
+    try {
+      if (isEditing) {
+        await updatePost(id, {
+          title: form.title,
+          slug: form.slug,
+          excerpt: form.excerpt || undefined,
+          content: form.content,
+          category: form.category,
+          cover_image: form.cover_image || undefined,
+          published: form.published,
+        })
+        toast.success('Post updated')
+      } else {
+        await createPost({
+          title: form.title,
+          slug: form.slug,
+          excerpt: form.excerpt || undefined,
+          content: form.content,
+          category: form.category,
+          cover_image: form.cover_image || undefined,
+          published: form.published,
+        })
+        toast.success('Post created')
+      }
       navigate('/admin/blog')
-    }, 500)
+    } catch {
+      toast.error('Failed to save post')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -78,7 +138,7 @@ export default function AdminBlogEditor() {
               Blog editor
             </p>
             <h1 className="mt-3 text-4xl font-black tracking-tight text-willbry-green-900">
-              Create agricultural content
+              {isEditing ? 'Edit post' : 'Create agricultural content'}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
               Write farming insights, market updates, company news, and innovation stories.
@@ -91,7 +151,10 @@ export default function AdminBlogEditor() {
                 label="Title"
                 required
                 value={form.title}
-                onChange={(e) => update('title', e.target.value)}
+                onChange={(e) => {
+                  update('title', e.target.value)
+                  if (!isEditing) update('slug', autoSlug(e.target.value))
+                }}
                 placeholder="Digital farming tools for better decisions"
               />
 
@@ -134,6 +197,7 @@ export default function AdminBlogEditor() {
                   rows={3}
                   value={form.excerpt}
                   onChange={(e) => update('excerpt', e.target.value)}
+                  placeholder="Short summary shown in blog listing..."
                   className="w-full rounded-2xl border border-willbry-green-100 px-4 py-3 text-sm outline-none transition-all focus:border-willbry-teal focus:ring-4 focus:ring-willbry-teal/15"
                 />
               </div>
@@ -147,22 +211,24 @@ export default function AdminBlogEditor() {
                   required
                   value={form.content}
                   onChange={(e) => update('content', e.target.value)}
+                  placeholder="Write your full article here..."
                   className="w-full rounded-2xl border border-willbry-green-100 px-4 py-3 text-sm leading-7 outline-none transition-all focus:border-willbry-teal focus:ring-4 focus:ring-willbry-teal/15"
                 />
               </div>
 
-              <label className="flex items-center gap-3 rounded-2xl bg-willbry-light p-4 text-sm font-black text-willbry-green-900">
+              <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-willbry-light p-4 text-sm font-black text-willbry-green-900">
                 <input
                   type="checkbox"
                   checked={form.published}
                   onChange={(e) => update('published', e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
                 />
                 Publish immediately
               </label>
 
               <div className="flex justify-end">
                 <Button type="submit" loading={loading} leftIcon={<Save size={16} />}>
-                  Save Post
+                  {isEditing ? 'Update Post' : 'Save Post'}
                 </Button>
               </div>
             </div>

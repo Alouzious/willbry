@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   BarChart3,
   Bot,
@@ -28,22 +28,11 @@ const adminItems = [
 ]
 
 export default function AdminDashboard() {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const result = await getAdminDashboard()
-        setData(result)
-      } catch {
-        toast.error('Failed to load dashboard')
-      } finally {
-        setLoading(false)
-      }
-    }
-    void load()
-  }, [])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['admin-dashboard'],
+    queryFn: getAdminDashboard,
+    staleTime: 1000 * 30,
+  })
 
   return (
     <main className="flex min-h-screen bg-willbry-light">
