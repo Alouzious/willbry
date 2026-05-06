@@ -1,0 +1,16 @@
+{
+  "name": "WillBry Agro-Innovations",
+  "short_name": "WillBry",
+  "description": "Uganda's digital agriculture platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f4f2b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
