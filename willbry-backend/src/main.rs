@@ -229,6 +229,7 @@ async fn main() {
 
     let cors = CorsLayer::new()
         .allow_origin([
+            "https://willbry.vercel.app".parse::<HeaderValue>().unwrap(),
             "http://localhost:5173".parse::<HeaderValue>().unwrap(),
             "http://127.0.0.1:5173".parse::<HeaderValue>().unwrap(),
         ])
