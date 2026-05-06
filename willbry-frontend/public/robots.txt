@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Block private routes from indexing
+Disallow: /portal
+Disallow: /portal/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+
+# Sitemap location
+Sitemap: https://willbry.com/sitemap.xml
